@@ -210,10 +210,11 @@ public class StroemClientTcpConnection {
       // This implementation only allows responses where the server agrees to the clients demands.
       @Override
       public boolean acceptExpireTime(long expireTime) {
-        long currentTimeMillis = (new Date()).getTime();
-        long currentTimeSec = currentTimeMillis / 100;
+        long currentTimeMillis = System.currentTimeMillis();
+        long currentTimeSec = currentTimeMillis / 1000;
         long min = currentTimeSec + paymentChannelTimeoutSeconds - SAFE_MARGIN_SECONDS;
         long max = currentTimeSec + paymentChannelTimeoutSeconds + SAFE_MARGIN_SECONDS;
+        log.debug("Expire time = " + expireTime + " must be greater than " + min + " and larger than " + max);
         return expireTime > min && expireTime < max;
       }
 

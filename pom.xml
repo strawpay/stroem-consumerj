@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <slf4j.version>1.7.2</slf4j.version>
+        <slf4j.version>1.7.6</slf4j.version>
         <stroem.version>0.1.0</stroem.version>
     </properties>
 
@@ -105,15 +105,15 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
+        <!-- bitcoinj consumers are expected to provide their own SLF4J adapters
+         such as logback, slf4j-log4j12, slf4j-jcl and so on
+         see http://www.slf4j.org/faq.html -->
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>jul-to-slf4j</artifactId>
+            <artifactId>slf4j-jdk14</artifactId>
             <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.0.10</version>
+            <scope>runtime</scope>
+            <optional>true</optional>
         </dependency>
 
         <!-- Google Guava for code utilities -->
@@ -154,7 +154,8 @@
             <scope>test</scope>
         </dependency>
 
-    </dependencies>
+
+  </dependencies>
 
     <distributionManagement>
         <snapshotRepository>

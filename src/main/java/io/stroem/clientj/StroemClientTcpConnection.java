@@ -117,6 +117,7 @@ public class StroemClientTcpConnection {
     this.serverIdHash = makeServerId(serverId);
     this.myKey = myKey;
     this.maxValue = maxValue;
+    this.paymentChannelTimeoutSeconds = paymentChannelTimeoutSeconds;
 
     log.debug("Start to init TCP over NIO");
 
@@ -212,8 +213,9 @@ public class StroemClientTcpConnection {
       public boolean acceptExpireTime(long expireTime) {
         long currentTimeMillis = System.currentTimeMillis();
         long currentTimeSec = currentTimeMillis / 1000;
-        long min = currentTimeSec + paymentChannelTimeoutSeconds - SAFE_MARGIN_SECONDS;
-        long max = currentTimeSec + paymentChannelTimeoutSeconds + SAFE_MARGIN_SECONDS;
+        long expectedExpirySec = currentTimeSec + paymentChannelTimeoutSeconds;
+        long min = expectedExpirySec - SAFE_MARGIN_SECONDS;
+        long max = expectedExpirySec + SAFE_MARGIN_SECONDS;
         log.debug("Expire time = " + expireTime + " must be greater than " + min + " and larger than " + max);
         return expireTime > min && expireTime < max;
       }

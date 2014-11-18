@@ -67,8 +67,8 @@ public class StroemMessageReceiver {
   private void readPaymentChannelMessage(Stroem.PaymentChannelMessage msg) throws InsufficientMoneyException {
     ByteString byteString = msg.getPaymentChannelMessage();
     try {
-      log.debug("Received a StroemMessage of type PaymentChannel");
       Protos.TwoWayChannelMessage paymentChannelMsg = Protos.TwoWayChannelMessage.newBuilder().mergeFrom(byteString).build();
+      log.debug("Received a StroemMessage of type PaymentChannel: " + paymentChannelMsg.getType());
       paymentChannelClient.receiveMessage(paymentChannelMsg);
     } catch (InvalidProtocolBufferException e) {
       log.error("Unable to read the payment channel protobuf message: "+ e.getMessage());

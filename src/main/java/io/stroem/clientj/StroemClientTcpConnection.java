@@ -174,6 +174,7 @@ public class StroemClientTcpConnection {
       // PaymentChannel protobuf objects need to be transformed to Stroem protobuf and sent via TCP.
       @Override
       public void sendToServer(Protos.TwoWayChannelMessage paymentMsg) {
+        log.debug("Sending Payment Channel message of type: " + paymentMsg.getType());
         Stroem.PaymentChannelMessage stroemPaymentChannelMsg = Stroem.PaymentChannelMessage.newBuilder()
             .setPaymentChannelMessage(paymentMsg.toByteString()).build();
         StroemMessage msg = StroemMessage.newBuilder()

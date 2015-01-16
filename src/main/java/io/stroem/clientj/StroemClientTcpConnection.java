@@ -119,18 +119,24 @@ public class StroemClientTcpConnection {
     this.maxValue = maxValue;
     this.paymentChannelTimeoutSeconds = paymentChannelTimeoutSeconds;
 
-    log.debug("Start to init TCP over NIO");
+    log.debug("1. Start to init TCP over NIO");
 
     // 1. Handles messages going out on the network (Java objects -> Stroem protobuf)
     PaymentChannelClient.ClientConnection clientConnection = buildPaymentChannelClientConnection();
+    log.debug("2. client connection built");
 
     paymentChannelClient = new PaymentChannelClient(wallet, myKey, maxValue, serverIdHash, paymentChannelTimeoutSeconds, clientConnection);
+    log.debug("3. payment client built");
+
     stroemMessageReceiver = new StroemMessageReceiver(paymentChannelClient);
+    log.debug("4. stroem message receiver built");
 
     // 2. This listener handles messages coming in from network (Stroem protobuf -> java objects)
     ProtobufParser.Listener<StroemMessage> stroemMessageListener = buildStroemMessageListener();
+    log.debug("5. stroem message listener built");
 
     StroemMessage defaultInstance = StroemMessage.getDefaultInstance();
+    log.debug("6. default instance built");
 
     wireParser = new ProtobufParser<StroemMessage>(stroemMessageListener, defaultInstance, Short.MAX_VALUE, socketTimeoutSeconds*1000);
 

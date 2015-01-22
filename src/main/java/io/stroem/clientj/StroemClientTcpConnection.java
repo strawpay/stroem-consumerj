@@ -19,6 +19,7 @@ import io.stroem.clientj.domain.StroemPromissoryNote;
 import org.bitcoin.paymentchannel.Protos;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.spongycastle.math.ec.ECPoint;
+import org.spongycastle.crypto.params.KeyParameter;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -67,6 +69,7 @@ public class StroemClientTcpConnection {
   private ECKey myKey;
   private Coin maxValue;
   private long paymentChannelTimeoutSeconds;
+  @Nullable private KeyParameter userKeySetup;
 
   // Temporary (state) variables
   private StroemStep stroemStep = StroemStep.START;
@@ -99,6 +102,7 @@ public class StroemClientTcpConnection {
    * @param wallet The wallet which will be paid from, and where completed transactions will be committed.
    *               Must already have a {@link StoredPaymentChannelClientStates} object in its extensions set.
    * @param myKey A freshly generated keypair used for the multisig contract and refund output.
+   * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    * @param maxValue The maximum value this channel is allowed to request
    * @param serverId A unique ID which is used to attempt reopening of an existing channel.
    *                 This must be unique to the server, and, if your application is exposing payment channels to some
@@ -109,7 +113,7 @@ public class StroemClientTcpConnection {
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
   public StroemClientTcpConnection(String server, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet, ECKey myKey,
-                                   Coin maxValue, String serverId) throws IOException, ValueOutOfRangeException {
+                                   @Nullable KeyParameter userKeySetup, Coin maxValue, String serverId) throws IOException, ValueOutOfRangeException {
 
     // Initiate some members
     this.wallet = wallet;
@@ -118,6 +122,7 @@ public class StroemClientTcpConnection {
     this.myKey = myKey;
     this.maxValue = maxValue;
     this.paymentChannelTimeoutSeconds = paymentChannelTimeoutSeconds;
+    this.userKeySetup = userKeySetup;
 
     log.debug("1. Start to init TCP over NIO");
 
@@ -125,7 +130,7 @@ public class StroemClientTcpConnection {
     PaymentChannelClient.ClientConnection clientConnection = buildPaymentChannelClientConnection();
     log.debug("2. client connection built");
 
-    paymentChannelClient = new PaymentChannelClient(wallet, myKey, maxValue, serverIdHash, paymentChannelTimeoutSeconds, clientConnection);
+    paymentChannelClient = new PaymentChannelClient(wallet, myKey, maxValue, serverIdHash, paymentChannelTimeoutSeconds, userKeySetup, clientConnection);
     log.debug("3. payment client built");
 
     stroemMessageReceiver = new StroemMessageReceiver(paymentChannelClient);
@@ -347,7 +352,7 @@ public class StroemClientTcpConnection {
 
     Stroem.PromissoryNoteRequest request = buildPromissoryNoteRequestProto(size, toTheOrderOf, requiredNegotiations);
 
-    ListenableFuture<PaymentIncrementAck> ackFuture = paymentChannelClient.incrementPayment(size, request.toByteString());
+    ListenableFuture<PaymentIncrementAck> ackFuture = paymentChannelClient.incrementPayment(size, request.toByteString(), this.userKeySetup);
     PaymentIncrementAck ack = ackFuture.get();
     this.stroemStep = StroemStep.PAYMENT_DONE;
 

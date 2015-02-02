@@ -228,7 +228,7 @@ public class StroemClientTcpConnection {
         long expectedExpirySec = currentTimeSec + paymentChannelTimeoutSeconds;
         long min = expectedExpirySec - SAFE_MARGIN_SECONDS;
         long max = expectedExpirySec + SAFE_MARGIN_SECONDS;
-        log.debug("Expire time = " + expireTime + " must be greater than " + min + " and larger than " + max);
+        log.debug("Expire time = " + expireTime + " must be greater than " + min + " and less than " + max);
         return expireTime > min && expireTime < max;
       }
 

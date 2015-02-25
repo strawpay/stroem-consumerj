@@ -118,7 +118,7 @@ public class StroemClientTcpConnection {
     // Initiate some members
     this.wallet = wallet;
     this.serverIdName = serverId;
-    this.serverIdHash = makeServerId(serverId);
+    this.serverIdHash = StroemClientUtil.makeServerIdFromString(serverId);
     this.myKey = myKey;
     this.maxValue = maxValue;
     this.paymentChannelTimeoutSeconds = paymentChannelTimeoutSeconds;

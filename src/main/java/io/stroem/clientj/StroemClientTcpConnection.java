@@ -74,9 +74,6 @@ public class StroemClientTcpConnection {
   // Temporary (state) variables
   private StroemStep stroemStep = StroemStep.START;
 
-  private Sha256Hash makeServerId(String s) {
-    return Sha256Hash.create(s.getBytes());
-  }
   /**
    *  Tell it to terminate the payment relationship and thus broadcast the micropayment transactions. We will
    *  resume control in destroyConnection below.

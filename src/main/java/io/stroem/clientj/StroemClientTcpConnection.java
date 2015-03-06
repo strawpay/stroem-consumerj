@@ -12,6 +12,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.stroem.clientj.domain.StroemEntity;
 import io.stroem.proto.Stroem;
 import io.stroem.proto.Stroem.StroemMessage;
+import io.stroem.Message;
 
 import com.google.protobuf.ByteString;
 
@@ -331,6 +332,7 @@ public class StroemClientTcpConnection {
    * @param toTheOrderOf The public key to negotiate this note to, i.e. the entity that should receive the returned note next.
    * @param requiredNegotiations The negotiations we want we be required in the promissory note.
    * @param myPublicKey The elliptict curve public key you want to use.
+   * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    * @param merchantsPublicKey The merchant's public key.
    * @throws ValueOutOfRangeException If the size is negative or would pay more than this channel's total value
    * @throws IllegalStateException If the channel has been closed or is not yet open
@@ -341,6 +343,7 @@ public class StroemClientTcpConnection {
         byte[] toTheOrderOf,
         List<StroemEntity> requiredNegotiations,
         ECPoint myPublicKey,
+        @Nullable KeyParameter userKeySetup,
         ECPoint merchantsPublicKey
   ) throws ValueOutOfRangeException, IllegalStateException, InterruptedException, ExecutionException, InvalidProtocolBufferException {
 
@@ -396,6 +399,12 @@ public class StroemClientTcpConnection {
 
   private StroemPromissoryNote buildPromissoryNoteFromProto(ByteString byteString, ECPoint myPublicKey, ECPoint merchantPublicKey) throws InvalidProtocolBufferException {
     PaymentInstrument pmts = ECPaymentInstrumentBitcoinj.getInstance();
+
+    stroemMsg = Messages .parseStroemMessage(infoBytes);
+    if (stroemMsg.hasPromissoryNote()) {
+      note = stroemMsg.getPromissoryNote();
+      promissoryNote< -Messages.parsePromissoryNote(note);
+    }
 
     byte[] bytes = byteString.toByteArray();
     ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);

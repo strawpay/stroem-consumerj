@@ -6,7 +6,7 @@ import org.bitcoinj.protocols.channels.PaymentChannelClient;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import io.stroem.proto.Stroem;
+import io.stroem.proto.StroemProtos;
 import org.bitcoin.paymentchannel.Protos;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ public class StroemMessageReceiver {
     this.paymentChannelClient = paymentChannelClient;
   }
 
-  public StroemStep receiveMessage(Stroem.StroemMessage msg, StroemStep previousStep)
+  public StroemStep receiveMessage(StroemProtos.StroemMessage msg, StroemStep previousStep)
       throws InsufficientMoneyException, WrongStroemServerVersionException, StroemProtocolException {
 
     switch (msg.getType()) {
@@ -64,7 +64,7 @@ public class StroemMessageReceiver {
   /**
    * Just extract the payment channel message and send it to PaymentChannelClient.
    */
-  private void readPaymentChannelMessage(Stroem.PaymentChannelMessage msg) throws InsufficientMoneyException {
+  private void readPaymentChannelMessage(StroemProtos.PaymentChannelMessage msg) throws InsufficientMoneyException {
     ByteString byteString = msg.getPaymentChannelMessage();
     try {
       Protos.TwoWayChannelMessage paymentChannelMsg = Protos.TwoWayChannelMessage.newBuilder().mergeFrom(byteString).build();
@@ -80,7 +80,7 @@ public class StroemMessageReceiver {
    * Check that the server version is same as we have.
    * If so, open the payment channel
    */
-  private StroemStep receiveStroemVersion(Stroem.StroemServerVersion msg, StroemStep step) throws WrongStroemServerVersionException {
+  private StroemStep receiveStroemVersion(StroemProtos.StroemServerVersion msg, StroemStep step) throws WrongStroemServerVersionException {
     log.debug("Received Stroem server version");
     if(step == StroemStep.WAITING_FOR_SERVER_STROM_VERSION) {
       int serverVersion = msg.getVersion();
@@ -99,7 +99,7 @@ public class StroemMessageReceiver {
   /**
    *
    */
-  private void receivePromissoryNote(Stroem.PromissoryNote msg) {
+  private void receivePromissoryNote(StroemProtos.PromissoryNote msg) {
     log.debug("Received Stroem promissory note");
     //  TODO: Not needed yet
     throw new IllegalStateException("not impl");
@@ -109,7 +109,7 @@ public class StroemMessageReceiver {
   /**
    * Try to recognize the error code.
    */
-  private void receiveError(Stroem.Error msg) throws StroemProtocolException {
+  private void receiveError(StroemProtos.Error msg) throws StroemProtocolException {
     log.error("Server sent ERROR {} with explanation {}", msg.getCode().name(), msg.hasExplanation() ? msg.getExplanation() : "(none)");
     StroemProtocolException.Code code;
     code = StroemProtocolException.Code.fromId(msg.getCode().getNumber());

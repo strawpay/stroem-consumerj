@@ -1,7 +1,8 @@
 package io.stroem.clientj;
 
-import io.stroem.payments.epn.ECPaymentInstrumentBitcoinj;
-import io.stroem.payments.epn.PaymentInstrument;
+import io.stroem.clientj.domain.StroemNegotiator;
+import io.stroem.promissorynote.ECPaymentInstrumentBitcoinj;
+import io.stroem.promissorynote.PaymentInstrument;
 import org.bitcoinj.core.*;
 import org.bitcoinj.net.NioClient;
 import org.bitcoinj.net.ProtobufParser;
@@ -10,8 +11,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.stroem.clientj.domain.StroemEntity;
-import io.stroem.proto.Stroem;
-import io.stroem.proto.Stroem.StroemMessage;
+import io.stroem.proto.StroemProtos;
+import io.stroem.proto.StroemProtos.StroemMessage;
+import io.stroem.javaapi.PaymentInstrumentJ;
 
 import com.google.protobuf.ByteString;
 
@@ -23,6 +25,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -183,7 +186,7 @@ public class StroemClientTcpConnection {
       @Override
       public void sendToServer(Protos.TwoWayChannelMessage paymentMsg) {
         log.debug("Sending Payment Channel message of type: " + paymentMsg.getType());
-        Stroem.PaymentChannelMessage stroemPaymentChannelMsg = Stroem.PaymentChannelMessage.newBuilder()
+        StroemProtos.PaymentChannelMessage stroemPaymentChannelMsg = StroemProtos.PaymentChannelMessage.newBuilder()
             .setPaymentChannelMessage(paymentMsg.toByteString()).build();
         StroemMessage msg = StroemMessage.newBuilder()
             .setType(StroemMessage.MessageType.PAYMENTCHANNEL_MESSAGE)
@@ -280,7 +283,7 @@ public class StroemClientTcpConnection {
         }
 
         // First thing to do is to send the Stroem Version
-        Stroem.StroemClientVersion stroemVersionMsg = Stroem.StroemClientVersion.newBuilder()
+        StroemProtos.StroemClientVersion stroemVersionMsg = StroemProtos.StroemClientVersion.newBuilder()
             .setVersion(CLIENT_STROEM_VERSION).build();
         StroemMessage msg = StroemMessage.newBuilder()
             .setType(StroemMessage.MessageType.STROEM_CLIENT_VERSION)
@@ -325,37 +328,53 @@ public class StroemClientTcpConnection {
 
   /**
    * Increments the total value which we pay the server.
-   * We will use the entity (who will issue the promissory note) that the server gave us during the version exchange..
+   * A. This method will call the hub and pay the hub using the payment channel.
+   * B. Then it will extract the payment info from the hub's ack, and use it to prepare the negotiation.
+   * C. A tailor made Negotiator object will be returned, and the wallet developer is supposed to use it for negotiation.
+   * D. When negotiation has been done, the wallet developer should send the new promissory note to the merchant.
    *
-   * @param size How many satoshis to increment the payment by (note: not the new total).
-   * @param toTheOrderOf The public key to negotiate this note to, i.e. the entity that should receive the returned note next.
-   * @param requiredNegotiations The negotiations we want we be required in the promissory note.
-   * @param myPublicKey The elliptict curve public key you want to use.
-   * @param merchantsPublicKey The merchant's public key.
+   * @param merchantPaymentDetails The (protobuf) message received from the merchant, containing Payment Details.
+   * @return StroemNegotiator - use this object to sign and negotiate the promissory note.
    * @throws ValueOutOfRangeException If the size is negative or would pay more than this channel's total value
+   * @throws ExecutionException If the ack future is interrupted
+   * @throws InterruptedException If the ack future is interrupted
    * @throws IllegalStateException If the channel has been closed or is not yet open
    *                               (see {@link StroemClientTcpConnection#getChannelOpenFuture()} for the second)
-   */
-  public synchronized StroemPromissoryNote incrementPayment(
-        Coin size,
-        byte[] toTheOrderOf,
-        List<StroemEntity> requiredNegotiations,
-        ECPoint myPublicKey,
-        ECPoint merchantsPublicKey
-  ) throws ValueOutOfRangeException, IllegalStateException, InterruptedException, ExecutionException, InvalidProtocolBufferException {
 
+   */
+  public synchronized StroemNegotiator incrementPayment(
+      StroemMessage merchantPaymentDetails
+  ) throws ValueOutOfRangeException, ExecutionException,  InterruptedException {
+
+    log.debug("1. Begin incrementPayment.");
     verifyStroemState();
     this.stroemStep = StroemStep.WAITING_FOR_PAYMENT_ACK;
 
-    Stroem.PromissoryNoteRequest request = buildPromissoryNoteRequestProto(size, toTheOrderOf, requiredNegotiations);
+    ECPoint myPublicKey = myKey.getPubKeyPoint(); // We will use the same key this connection was created with
+    PaymentInstrumentJ.PromissoryNoteRequestReturnBundle returnBundle = PaymentInstrumentJ.buildPromissoryNoteRequestProto(merchantPaymentDetails, myPublicKey);
 
-    ListenableFuture<PaymentIncrementAck> ackFuture = paymentChannelClient.incrementPayment(size, request.toByteString(), this.userKeySetup);
+    log.debug("2. Verify that the merchant has the correct issuer public key.");
+    StroemEntity realIssuerProtoEntity = this.stroemMessageReceiver.getHubGivenEntity();
+    returnBundle.verifyIssuerEntity(realIssuerProtoEntity.getName(), realIssuerProtoEntity.getPublicKey());
+
+    StroemProtos.StroemMessage messageRequestProto = returnBundle.getPromissoryNoteRequestProto();
+    Coin sizeFromMerchant = returnBundle.getAmount();
+
+    log.debug("3. About to pay the hub (do an incrementPayment call).");
+    ListenableFuture<PaymentIncrementAck> ackFuture = paymentChannelClient.incrementPayment(sizeFromMerchant, messageRequestProto.toByteString(), this.userKeySetup);
+
     PaymentIncrementAck ack = ackFuture.get();
+    log.debug("4. Ack received. ");
     this.stroemStep = StroemStep.PAYMENT_DONE;
 
-    log.debug("Ack received. Now extract the promissory note.");
+    log.debug("5. Prepare for negotiation. ");
+    ByteString infoByteString = ack.getInfo();
+    PaymentInstrument.PromissoryNote promissoryNote = PaymentInstrumentJ.buildPromissoryNoteFromBytes(infoByteString);
+    ECPoint merchantPublicKey = returnBundle.getMerchantPublicKey();
+    PaymentInstrument.NegotiateInfo negotiateInfo = PaymentInstrumentJ.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, infoByteString.toByteArray());
 
-    return buildPromissoryNoteFromProto(ack.getInfo(), myPublicKey, merchantsPublicKey);
+    log.debug("6. End.");
+    return new StroemNegotiator(negotiateInfo);
   }
 
   private void verifyStroemState() {
@@ -374,44 +393,6 @@ public class StroemClientTcpConnection {
         throw new IllegalStateException("Cannot make payments when the connection's state is: " + this.stroemStep);
     }
   }
-
-  private Stroem.PromissoryNoteRequest buildPromissoryNoteRequestProto(Coin size, byte[] toTheOrderOf, List<StroemEntity> requiredNegotiations) {
-    Stroem.Entity issuerProtoEntity = this.stroemMessageReceiver.getHubGivenEntity().buildProtoBufObject();
-
-    Stroem.PromissoryNoteRequest.Builder requestBuilder = Stroem.PromissoryNoteRequest.newBuilder()
-        .setAmount(size.longValue())
-        .setCurrency(CURRENCY)
-        .setIssuer(issuerProtoEntity)
-        .setToTheOrderOf(ByteString.copyFrom(toTheOrderOf));
-
-    int i = 0;
-    for(StroemEntity negotiation: requiredNegotiations) {
-      requestBuilder.addRequiredLastNegotiations(negotiation.buildProtoBufObject());
-    }
-
-    Stroem.PromissoryNoteRequest request = requestBuilder.build();
-    log.debug("Promissory note request created.");
-    return request;
-  }
-
-  private StroemPromissoryNote buildPromissoryNoteFromProto(ByteString byteString, ECPoint myPublicKey, ECPoint merchantPublicKey) throws InvalidProtocolBufferException {
-    PaymentInstrument pmts = ECPaymentInstrumentBitcoinj.getInstance();
-
-    byte[] bytes = byteString.toByteArray();
-    ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-    PaymentInstrument.PromissoryNote deserializedPn = pmts.deserialize(byteBuffer);
-    PaymentInstrument.PaymentInfo paymentInfo = pmts.createPaymentInfo("I buy this and that and so on...");
-    PaymentInstrument.NegotiateInfo info = deserializedPn.validateForNegotiate(myPublicKey, merchantPublicKey, paymentInfo)
-        .getOrElse(null);
-
-    log.debug("Promissory note extracted from byte array.");
-
-    byte[] issuerPublicKeyAsBytes =  pmts.keyBytes(deserializedPn.issuer().publicKey());
-    StroemEntity issuer = new StroemEntity(deserializedPn.issuer().name(), issuerPublicKeyAsBytes);
-
-    return null; // TODO: Fix
-  }
-
 
   /**
    * <p>Gets the {@link PaymentChannelClientState} object which stores the current state of the connection with the

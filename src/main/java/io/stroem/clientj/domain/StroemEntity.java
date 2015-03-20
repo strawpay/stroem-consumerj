@@ -1,7 +1,7 @@
 package io.stroem.clientj.domain;
 
 import com.google.protobuf.ByteString;
-import io.stroem.proto.Stroem;
+import io.stroem.proto.StroemProtos;
 
 
 /**
@@ -17,7 +17,7 @@ public class StroemEntity {
     this.publicKey = publicKey;
   }
 
-  public StroemEntity(Stroem.Entity entity) {
+  public StroemEntity(StroemProtos.Entity entity) {
     this(entity.getName(), entity.getPublicKey().toByteArray());
   }
 
@@ -29,9 +29,9 @@ public class StroemEntity {
     return publicKey;
   }
 
-  public Stroem.Entity buildProtoBufObject() {
+  public StroemProtos.Entity buildProtoBufObject() {
     ByteString entityPubKey = ByteString.copyFrom(publicKey);
-    return Stroem.Entity.newBuilder()
+    return StroemProtos.Entity.newBuilder()
         .setName(name)
         .setPublicKey(entityPubKey)
         .build();

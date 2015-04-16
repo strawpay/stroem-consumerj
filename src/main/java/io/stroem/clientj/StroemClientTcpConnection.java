@@ -13,7 +13,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.stroem.clientj.domain.StroemEntity;
 import io.stroem.proto.StroemProtos;
 import io.stroem.proto.StroemProtos.StroemMessage;
-import io.stroem.javaapi.PaymentInstrumentJ;
+import io.stroem.javaapi.JavaToScalaBridge;
 
 import com.google.protobuf.ByteString;
 
@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -283,7 +284,7 @@ public class StroemClientTcpConnection {
         }
 
         // First thing to do is to send the Stroem Version
-        Stroem.StroemClientVersion stroemVersionMsg = Stroem.StroemClientVersion.newBuilder()
+        StroemProtos.StroemClientVersion stroemVersionMsg = StroemProtos.StroemClientVersion.newBuilder()
             .setVersion(CLIENT_STROEM_VERSION).build();
         StroemMessage msg = StroemMessage.newBuilder()
             .setType(StroemMessage.MessageType.STROEM_CLIENT_VERSION)
@@ -351,11 +352,11 @@ public class StroemClientTcpConnection {
     this.stroemStep = StroemStep.WAITING_FOR_PAYMENT_ACK;
 
     ECPoint myPublicKey = myKey.getPubKeyPoint(); // We will use the same key this connection was created with
-    PaymentInstrumentJ.PromissoryNoteRequestReturnBundle returnBundle = PaymentInstrumentJ.buildPromissoryNoteRequestProto(merchantPaymentDetails, myPublicKey);
+    JavaToScalaBridge.PromissoryNoteRequestReturnBundle returnBundle = JavaToScalaBridge.buildPromissoryNoteRequestProto(merchantPaymentDetails, myPublicKey);
 
     log.debug("2. Verify that the merchant has the correct issuer public key.");
     StroemEntity realIssuerProtoEntity = this.stroemMessageReceiver.getHubGivenEntity();
-    returnBundle.verifyIssuerEntity(realIssuerProtoEntity.getName(), realIssuerProtoEntity.getPublicKey());
+    verifyIssuerEntity(realIssuerProtoEntity.getName(), realIssuerProtoEntity.getPublicKey(), returnBundle);
 
     StroemProtos.StroemMessage messageRequestProto = returnBundle.getPromissoryNoteRequestProto();
     Coin sizeFromMerchant = returnBundle.getAmount();
@@ -369,12 +370,33 @@ public class StroemClientTcpConnection {
 
     log.debug("5. Prepare for negotiation. ");
     ByteString infoByteString = ack.getInfo();
-    PaymentInstrument.PromissoryNote promissoryNote = PaymentInstrumentJ.buildPromissoryNoteFromBytes(infoByteString);
+    PaymentInstrument.PromissoryNote promissoryNote = JavaToScalaBridge.buildPromissoryNoteFromBytes(infoByteString);
     ECPoint merchantPublicKey = returnBundle.getMerchantPublicKey();
-    PaymentInstrument.NegotiateInfo negotiateInfo = PaymentInstrumentJ.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, infoByteString.toByteArray());
+    PaymentInstrument.NegotiateInfo negotiateInfo = JavaToScalaBridge.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, infoByteString.toByteArray());
 
     log.debug("6. End.");
     return new StroemNegotiator(negotiateInfo);
+  }
+
+  /**
+   * Use this method to validate that the merchant has got the Issuer's latest public key
+   * (pub key may change over time)
+   *
+   * @param realIssuerName
+   * @param realIssuerPublicKey
+   * @param returnBundle
+   */
+  private void verifyIssuerEntity(String realIssuerName, byte[] realIssuerPublicKey, JavaToScalaBridge.PromissoryNoteRequestReturnBundle returnBundle) {
+    if (realIssuerName.equals(returnBundle.getIssuerName())) {
+      byte[] publicKey = returnBundle.getIssuerPublicKey().getEncoded();
+      if(Arrays.equals(publicKey, realIssuerPublicKey)) {
+        return; // All OK. Do nothing
+      } else {
+        throw new IllegalStateException("Merchant's key is old, must contact the issuer to get the correct one");
+      }
+    } else {
+      throw new IllegalStateException("Issuer from merchant (" + returnBundle.getIssuerName() + ") is not same as issuers name (" + realIssuerName + ")");
+    }
   }
 
   private void verifyStroemState() {
@@ -393,44 +415,6 @@ public class StroemClientTcpConnection {
         throw new IllegalStateException("Cannot make payments when the connection's state is: " + this.stroemStep);
     }
   }
-
-  private Stroem.PromissoryNoteRequest buildPromissoryNoteRequestProto(Coin size, byte[] toTheOrderOf, List<StroemEntity> requiredNegotiations) {
-    Stroem.Entity issuerProtoEntity = this.stroemMessageReceiver.getHubGivenEntity().buildProtoBufObject();
-
-    Stroem.PromissoryNoteRequest.Builder requestBuilder = Stroem.PromissoryNoteRequest.newBuilder()
-        .setAmount(size.longValue())
-        .setCurrency(CURRENCY)
-        .setIssuer(issuerProtoEntity)
-        .setToTheOrderOf(ByteString.copyFrom(toTheOrderOf));
-
-    int i = 0;
-    for(StroemEntity negotiation: requiredNegotiations) {
-      requestBuilder.addRequiredLastNegotiations(negotiation.buildProtoBufObject());
-    }
-
-    Stroem.PromissoryNoteRequest request = requestBuilder.build();
-    log.debug("Promissory note request created.");
-    return request;
-  }
-
-  private StroemPromissoryNote buildPromissoryNoteFromProto(ByteString byteString, ECPoint myPublicKey, ECPoint merchantPublicKey) throws InvalidProtocolBufferException {
-    PaymentInstrument pmts = ECPaymentInstrumentBitcoinj.getInstance();
-
-    byte[] bytes = byteString.toByteArray();
-    ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-    PaymentInstrument.PromissoryNote deserializedPn = pmts.deserialize(byteBuffer);
-    PaymentInstrument.PaymentInfo paymentInfo = pmts.createPaymentInfo("I buy this and that and so on...");
-    PaymentInstrument.NegotiateInfo info = deserializedPn.validateForNegotiate(myPublicKey, merchantPublicKey, paymentInfo)
-        .getOrElse(null);
-
-    log.debug("Promissory note extracted from byte array.");
-
-    byte[] issuerPublicKeyAsBytes =  pmts.keyBytes(deserializedPn.issuer().publicKey());
-    StroemEntity issuer = new StroemEntity(deserializedPn.issuer().name(), issuerPublicKeyAsBytes);
-
-    return null; // TODO: Fix
-  }
-
 
   /**
    * <p>Gets the {@link PaymentChannelClientState} object which stores the current state of the connection with the

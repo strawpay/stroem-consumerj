@@ -6,11 +6,11 @@
 
     <groupId>io.stroem</groupId>
     <artifactId>stroem-bitcoinjclient</artifactId>
-    <version>1.4</version>
+    <version>1.7</version>
 
   <properties>
     <slf4j.version>1.7.6</slf4j.version>
-    <stroem.version>0.1.5</stroem.version>
+    <stroem.version>0.1.6</stroem.version>
   </properties>
 
 
@@ -201,7 +201,7 @@
 
   </dependencies>
 
-  <!--distributionManagement>
+  <distributionManagement>
     <snapshotRepository>
       <id>strawpay-libs-snapshots</id>
       <name>strawpay-snapshots</name>
@@ -212,6 +212,6 @@
       <name>strawpay-releases</name>
       <url>https://strawpay.artifactoryonline.com/strawpay/libs-releases-local</url>
     </repository>
-  </distributionManagement-->
+  </distributionManagement>
 
 </project>

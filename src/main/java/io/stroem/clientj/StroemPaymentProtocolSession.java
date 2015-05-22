@@ -10,6 +10,7 @@ import io.stroem.clientj.domain.StroemUri;
 import io.stroem.javaapi.JavaToScalaBridge;
 import io.stroem.proto.StroemProtos;
 import io.stroem.paymentprotocol.StroemPpProtos;
+import org.bitcoin.protocols.payments.Protos;
 import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.TrustStoreLoader;
 import org.bitcoinj.params.MainNetParams;
@@ -210,7 +211,6 @@ public class StroemPaymentProtocolSession {
       ByteString stroemDataBytes = paymentDetails.getStroemData();
       stroemData = stroemDataBytes.toByteArray();
 
-      //this.stroemMessage = Messages.
       creationDate = new Date(paymentDetails.getTime() * 1000);
       merchantPaymentDetails = getMerchantPaymentDetailsFromBytes(stroemDataBytes);
       if (merchantPaymentDetails == null)
@@ -300,11 +300,24 @@ public class StroemPaymentProtocolSession {
     return params;
   }
 
-  /** Returns the protobuf that this object was instantiated with.
-   *  TODO:Olle Will this clash with the Protos.PaymentRequest object?
+  /**
+   * Returns the protobuf that this object was instantiated with.
+   *
+   *  @return Note: this is NOT the same as Protos.PaymentRequest object
    */
   public StroemPpProtos.PaymentRequest getPaymentRequest() {
     return paymentRequest;
+  }
+
+  /**
+   * Will transform the PaymentRequest so it will have the same type as the standard PaymentRequest
+   *
+   * @return The transformed Protos.PaymentRequest object
+   */
+  public Protos.PaymentRequest getPaymentRequestNormal() throws InvalidProtocolBufferException {
+    byte[] bytes = paymentRequest.toByteArray();
+    ByteString byteString = ByteString.copyFrom(bytes);
+    return Protos.PaymentRequest.newBuilder().mergeFrom(byteString).build();
   }
 
   /** Returns the protobuf that describes the payment to be made. */

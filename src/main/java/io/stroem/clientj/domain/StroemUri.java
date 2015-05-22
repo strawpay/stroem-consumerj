@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * <p>StroemUrl to provide the following :</p>
  * <ul>
- *   <li>A URL that could potentially be </li>
+ *   <li>A URL that could potentially be a normal BIP70 uri and a Stroem payment protocol uri. </li>
  * </ul>
  *
  * @since 0.0.1

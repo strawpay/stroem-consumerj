@@ -208,7 +208,7 @@ public class StroemPaymentProtocolSession {
 
       ByteString paymentDetailsBytes = request.getSerializedPaymentDetails();
       StroemPpProtos.PaymentDetails paymentDetails = StroemPpProtos.PaymentDetails.newBuilder().mergeFrom(paymentDetailsBytes).build();
-      ByteString stroemDataBytes = paymentDetails.getStroemData();
+      ByteString stroemDataBytes = paymentDetails.getStroemMessage();
       stroemData = stroemDataBytes.toByteArray();
 
       creationDate = new Date(paymentDetails.getTime() * 1000);

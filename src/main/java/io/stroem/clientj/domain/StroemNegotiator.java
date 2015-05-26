@@ -35,7 +35,7 @@ public class StroemNegotiator {
    *
    * @return The hash you must sign
    */
-  Sha256Hash getHashToSign() {
+  public Sha256Hash getHashToSign() {
     return (Sha256Hash) negotiationInfo.hashToSign();
   }
 
@@ -45,7 +45,7 @@ public class StroemNegotiator {
    * @param hashSignature The signature of the hash
    * @return A Stroem Message that should be sent to the merchant
    */
-  StroemProtos.StroemMessage negotiate(ECKey.ECDSASignature hashSignature) {
+  public StroemProtos.StroemMessage negotiate(ECKey.ECDSASignature hashSignature) {
     PaymentInstrument.PromissoryNote promissoryNote = negotiationInfo.negotiate(hashSignature);
     return Messages.newPromissoryNoteMessage(promissoryNote);
   }

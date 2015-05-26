@@ -8,7 +8,7 @@ import org.bitcoinj.core.Sha256Hash;
 
 /**
  * <p>This class is supposed to be used by the wallet to get the hash to sign, and to use
- * this signature when signing over the promissory not (negotiate it) to the merchant:</p>
+ * this signature when signing over the promissory note (negotiate it) to the merchant:</p>
  * <ul>
  * <li>Call getHashToSign() to get the hash </li>
  * <li>Call negotiate() to sign over the promissory note</li>
@@ -47,6 +47,6 @@ public class StroemNegotiator {
    */
   StroemProtos.StroemMessage negotiate(ECKey.ECDSASignature hashSignature) {
     PaymentInstrument.PromissoryNote promissoryNote = negotiationInfo.negotiate(hashSignature);
-    return null; // TODO:Olle fix
+    return Messages.newPromissoryNoteMessage(promissoryNote);
   }
 }

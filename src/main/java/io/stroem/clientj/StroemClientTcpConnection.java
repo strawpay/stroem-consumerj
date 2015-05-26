@@ -374,7 +374,7 @@ public class StroemClientTcpConnection {
     ECPoint merchantPublicKey = returnBundle.getMerchantPublicKey();
     PaymentInstrument.NegotiateInfo negotiateInfo = JavaToScalaBridge.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, infoByteString.toByteArray());
 
-    log.debug("6. End.");
+    log.debug("6. End (return StroemNegotiator).");
     return new StroemNegotiator(negotiateInfo);
   }
 

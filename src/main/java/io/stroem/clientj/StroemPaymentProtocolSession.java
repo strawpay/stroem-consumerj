@@ -155,23 +155,22 @@ public class StroemPaymentProtocolSession {
    *
    * @param stroemMessage to send to the merchant
    */
-  public StroemPaymentReceipt sendPromissoryNoteToMerchant(StroemProtos.StroemMessage stroemMessage) {
-    return executor.submit(new Callable<StroemPaymentProtocolSession>() {
+  public ListenableFuture<StroemPaymentReceipt> sendPromissoryNoteToMerchant(StroemProtos.StroemMessage stroemMessage) {
+    return executor.submit(new Callable<StroemPaymentReceipt>() {
       @Override
-      public StroemPaymentProtocolSession call() throws Exception {
+      public StroemPaymentReceipt call() throws Exception {
         HttpURLConnection connection = (HttpURLConnection) merchantUri.toURL().openConnection();
         connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENT);
         connection.setUseCaches(false);
         // Get the stroem message first
         StroemProtos.StroemMessage stroemMessageReply = StroemProtos.StroemMessage.parseFrom(connection.getInputStream());
         // Convert it to correct type
-        io.stroem.api.PaymentReceipt  paymentReceipt = Messages.parsePaymentReceipt(stroemMessageReply);
-        /* Cast it to Java
+        io.stroem.api.PaymentReceipt paymentReceipt = Messages.parsePaymentReceipt(stroemMessageReply).get();
+        // Cast it to Java
         return new StroemPaymentReceipt(
-            new StroemPaymentHash(paymentReceipt.getPaymentHash()),
-            new Date(paymentReceipt.getSignedAt()),
-            paymentReceipt.getSignature().toByteArray())
-            */
+            new StroemPaymentHash(paymentReceipt.paymentHash().value()),
+            new Date(paymentReceipt.signedAt().getMillis()),
+            paymentReceipt.signature().toCanonicalised());
       }
     });
 

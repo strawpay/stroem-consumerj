@@ -4,9 +4,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import io.stroem.clientj.domain.StroemNegotiator;
-import io.stroem.clientj.domain.StroemPaymentProtocolException;
-import io.stroem.clientj.domain.StroemUri;
+import io.stroem.api.Messages;
+import io.stroem.clientj.domain.*;
 import io.stroem.javaapi.JavaToScalaBridge;
 import io.stroem.proto.StroemProtos;
 import io.stroem.paymentprotocol.StroemPpProtos;
@@ -50,6 +49,7 @@ public class StroemPaymentProtocolSession {
   private Coin totalValue;
   private Date creationDate;
   private byte[] stroemData;
+  private URI merchantUri;
 
   /**
    * Stores the calculated PKI verification data, or null if none is available.
@@ -78,24 +78,6 @@ public class StroemPaymentProtocolSession {
     }
   }
 
-  /**
-   * Returns a future that will be notified with a StroemPaymentProtocolSession object after it is fetched using the provided url.
-   * url is an address where the {@link StroemPpProtos.PaymentRequest} object may be fetched.
-   * If the payment request object specifies a PKI method, then the system trust store will
-   * be used to verify the signature provided by the payment request. An exception is thrown by the future if the
-   * signature cannot be verified.
-   */
-  public static ListenableFuture<StroemPaymentProtocolSession> createFromUrl(final String url)
-      throws PaymentProtocolException {
-    if (url == null)
-      throw new PaymentProtocolException.InvalidPaymentRequestURL("null paymentRequestUrl");
-    try {
-      return fetchPaymentRequest(new URI(url));
-    } catch(URISyntaxException e) {
-      throw new PaymentProtocolException.InvalidPaymentRequestURL(e);
-    }
-  }
-
   private static ListenableFuture<StroemPaymentProtocolSession> fetchPaymentRequest(final URI uri) {
     return executor.submit(new Callable<StroemPaymentProtocolSession>() {
       @Override
@@ -104,7 +86,7 @@ public class StroemPaymentProtocolSession {
         connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
         connection.setUseCaches(false);
         StroemPpProtos.PaymentRequest paymentRequest = StroemPpProtos.PaymentRequest.parseFrom(connection.getInputStream());
-        return new StroemPaymentProtocolSession(paymentRequest);
+        return new StroemPaymentProtocolSession(paymentRequest, uri);
       }
     });
   }
@@ -112,8 +94,9 @@ public class StroemPaymentProtocolSession {
   /**
    * Creates a StroemPaymentProtocolSession from the provided {@link StroemPpProtos.PaymentRequest}.
    */
-  public StroemPaymentProtocolSession(StroemPpProtos.PaymentRequest request) throws PaymentProtocolException {
+  public StroemPaymentProtocolSession(StroemPpProtos.PaymentRequest request, URI merchantUri) throws PaymentProtocolException {
     this.trustStoreLoader = new TrustStoreLoader.DefaultTrustStoreLoader();
+    this.merchantUri = merchantUri;
     parsePaymentRequest(request);
     pkiVerificationData = null; // TODO:Olle Do we need verification? // PaymentProtocol.verifyPaymentRequestPki(request, this.trustStoreLoader.getKeyStore());
   }
@@ -167,31 +150,31 @@ public class StroemPaymentProtocolSession {
   }
 
   /**
-   * Makes the payment to the issuer over a payment channel.
+   * Sends the negotiated note to the merchant.
+   * Will use the same URI as we used to get the payment request.
    *
-   * @param refundAddr will be used by the merchant to send money back if there was a problem.
-   * @param memo is a message to include in the payment message sent to the merchant.
+   * @param stroemMessage to send to the merchant
    */
-  public StroemNegotiator pay(@Nullable Address refundAddr, @Nullable String memo, StroemClientTcpConnection stroemClientTcpConnection)
-      throws PaymentProtocolException, VerificationException, IOException, ValueOutOfRangeException, ExecutionException, InterruptedException {
+  public StroemPaymentReceipt sendPromissoryNoteToMerchant(StroemProtos.StroemMessage stroemMessage) {
+    return executor.submit(new Callable<StroemPaymentProtocolSession>() {
+      @Override
+      public StroemPaymentProtocolSession call() throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) merchantUri.toURL().openConnection();
+        connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENT);
+        connection.setUseCaches(false);
+        // Get the stroem message first
+        StroemProtos.StroemMessage stroemMessageReply = StroemProtos.StroemMessage.parseFrom(connection.getInputStream());
+        // Convert it to correct type
+        io.stroem.api.PaymentReceipt  paymentReceipt = Messages.parsePaymentReceipt(stroemMessageReply);
+        /* Cast it to Java
+        return new StroemPaymentReceipt(
+            new StroemPaymentHash(paymentReceipt.getPaymentHash()),
+            new Date(paymentReceipt.getSignedAt()),
+            paymentReceipt.getSignature().toByteArray())
+            */
+      }
+    });
 
-    StroemNegotiator stroemNegotiator = null;
-
-    // Check the request's state
-    if (isExpired()) {
-      throw new PaymentProtocolException.Expired("PaymentRequest is expired");
-    }
-
-    // Check the payment channel's state
-    PaymentChannelClientState state = stroemClientTcpConnection.state();
-    if (state.getState() == PaymentChannelClientState.State.EXPIRED) {
-      throw new PaymentProtocolException.Expired("Payment Channel has expired, you need to create a new");
-    } else if (state.getState() == PaymentChannelClientState.State.READY) {
-      stroemNegotiator = stroemClientTcpConnection.incrementPayment(this.stroemData);
-    } else {
-      // Do nothing, and the caller will know that the payment channel must be at fault (bad state).
-    }
-    return stroemNegotiator;
   }
 
   private void parsePaymentRequest(StroemPpProtos.PaymentRequest request) throws PaymentProtocolException {

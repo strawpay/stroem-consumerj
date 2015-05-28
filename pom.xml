@@ -10,7 +10,7 @@
 
   <properties>
     <slf4j.version>1.7.6</slf4j.version>
-    <stroem.version>0.1.8</stroem.version>
+    <stroem.version>0.1.9</stroem.version>
   </properties>
 
 

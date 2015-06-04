@@ -335,6 +335,8 @@ public class StroemClientTcpConnection {
    * D. When negotiation has been done, the wallet developer should send the new promissory note to the merchant.
    *
    * @param merchantPaymentDetailsBytes The (protobuf) message received from the merchant, containing Payment Details.
+   * @param myTransactionKey - A (potentially new) key pair that will be used during this transaction. Must be used to sign the
+   *                later.
    * @return StroemNegotiator - use this object to sign and negotiate the promissory note.
    * @throws ValueOutOfRangeException If the size is negative or would pay more than this channel's total value
    * @throws ExecutionException If the ack future is interrupted
@@ -344,14 +346,15 @@ public class StroemClientTcpConnection {
 
    */
   public synchronized StroemNegotiator incrementPayment(
-      byte[] merchantPaymentDetailsBytes
+      byte[] merchantPaymentDetailsBytes,
+      ECKey myTransactionKey
   ) throws ValueOutOfRangeException, ExecutionException,  InterruptedException {
 
     log.debug("1. Begin incrementPayment.");
     verifyStroemState();
     this.stroemStep = StroemStep.WAITING_FOR_PAYMENT_ACK;
 
-    ECPoint myPublicKey = myKey.getPubKeyPoint(); // We will use the same key this connection was created with
+    ECPoint myPublicKey = myTransactionKey.getPubKeyPoint();
     JavaToScalaBridge.PromissoryNoteRequestReturnBundle returnBundle = JavaToScalaBridge.buildPromissoryNoteRequestProto(merchantPaymentDetailsBytes, myPublicKey);
 
     log.debug("2. Verify that the merchant has the correct issuer public key.");

@@ -13,8 +13,6 @@ import org.bitcoin.protocols.payments.Protos;
 import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.TrustStoreLoader;
 import org.bitcoinj.params.MainNetParams;
-import org.bitcoinj.protocols.channels.PaymentChannelClientState;
-import org.bitcoinj.protocols.channels.ValueOutOfRangeException;
 import org.bitcoinj.protocols.payments.PaymentProtocol;
 import org.bitcoinj.protocols.payments.PaymentProtocolException;
 import org.bitcoinj.utils.Threading;
@@ -26,7 +24,6 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Date;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 /**
  * <p>StroemPaymentProtocolSession to provide the following :</p>
@@ -48,6 +45,7 @@ public class StroemPaymentProtocolSession {
   private StroemProtos.MerchantPaymentDetails merchantPaymentDetails;
   private Coin totalValue;
   private Date creationDate;
+  private Date expiryDate;
   private byte[] stroemData;
   private URI merchantUri;
 
@@ -131,10 +129,7 @@ public class StroemPaymentProtocolSession {
    * Returns the expires time of the payment request, or null if none.
    */
   @Nullable public Date getExpires() {
-    if (merchantPaymentDetails.hasValidFor())
-      return new Date(merchantPaymentDetails.getValidFor() * 1000);
-    else
-      return null;
+    return expiryDate;
   }
 
   /**
@@ -177,53 +172,51 @@ public class StroemPaymentProtocolSession {
   }
 
   private void parsePaymentRequest(StroemPpProtos.PaymentRequest request) throws PaymentProtocolException {
-System.out.println("parsePaymentRequest() ------  0 ");
     try {
       if (request == null)
         throw new PaymentProtocolException("request cannot be null");
       if (request.getPaymentDetailsVersion() != 1)
         throw new PaymentProtocolException.InvalidVersion("Version 1 required. Received version " + request.getPaymentDetailsVersion());
-System.out.println("parsePaymentRequest() ------  1");
 
       // Get the merchant details from the request
       paymentRequest = request;
       if (!request.hasSerializedPaymentDetails())
         throw new PaymentProtocolException("No PaymentDetails");
 
-System.out.println("parsePaymentRequest() ------  1");
       ByteString paymentDetailsBytes = request.getSerializedPaymentDetails();
-System.out.println("parsePaymentRequest() ------  1");
       StroemPpProtos.PaymentDetails paymentDetails = StroemPpProtos.PaymentDetails.parseFrom(paymentDetailsBytes);
-System.out.println("parsePaymentRequest() ------  2");
-      long l = paymentDetails.getExpires();
-System.out.println("parsePaymentRequest() ------  2 expires = " + l);
-      ByteString stroemDataBytes = paymentDetails.getStroemMessage();
-System.out.println("parsePaymentRequest() ------  2b");
-      stroemData = stroemDataBytes.toByteArray();
-System.out.println("parsePaymentRequest() ------  3");
 
-System.out.println("parsePaymentRequest() ------  3");
+      // Get expires
+      // TODO:Olle Should we get the value from the main paymentDetails?
+      if (paymentDetails.hasExpires())
+        expiryDate = new Date(paymentDetails.getExpires() * 1000L);
+      else
+        expiryDate = null;
+
+      ByteString stroemDataBytes = null;
+      if(paymentDetails.hasStroemMessage()) {
+        stroemDataBytes = paymentDetails.getStroemMessage();
+      } else {
+        throw new RuntimeException("At this point the payment details must have stroem message");
+      }
+      stroemData = stroemDataBytes.toByteArray();
+
       creationDate = new Date(paymentDetails.getTime() * 1000);
       merchantPaymentDetails = getMerchantPaymentDetailsFromBytes(stroemDataBytes);
       if (merchantPaymentDetails == null)
         throw new PaymentProtocolException("Invalid PaymentDetails");
 
-System.out.println("parsePaymentRequest() ------  3");
       // Get the params from the currency field
       params = getParamsFromCurrency(merchantPaymentDetails);
       if (params == null)
         throw new PaymentProtocolException.InvalidNetwork("Invalid currency " + merchantPaymentDetails.getCurrency());
 
-System.out.println("parsePaymentRequest() ------  3");
       totalValue = getTotalValue();
     } catch (InvalidProtocolBufferException e) {
-      System.out.println("parsePaymentRequest() ------ Inva excep: " + e.getMessage());
       throw new PaymentProtocolException(e);
     } catch (IOException  e) {
-      System.out.println("parsePaymentRequest() ------ IO excep: " + e.getMessage());
       throw new PaymentProtocolException(e);
     }
-System.out.println("parsePaymentRequest() ------  end");
   }
 
   /**

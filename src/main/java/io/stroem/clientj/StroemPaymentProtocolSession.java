@@ -48,7 +48,7 @@ public class StroemPaymentProtocolSession {
   private Date expiryDate;
   private byte[] stroemData;
   private URI merchantUri;
-  private String issuerDomainName;
+  private String issuerName;
 
   /**
    * Stores the calculated PKI verification data, or null if none is available.
@@ -93,10 +93,10 @@ public class StroemPaymentProtocolSession {
   /**
    * Creates a StroemPaymentProtocolSession from the provided {@link StroemPpProtos.PaymentRequest}.
    */
-  public StroemPaymentProtocolSession(StroemPpProtos.PaymentRequest request, URI merchantUri, String issuerDomainName) throws PaymentProtocolException {
+  public StroemPaymentProtocolSession(StroemPpProtos.PaymentRequest request, URI merchantUri, String issuerName) throws PaymentProtocolException {
     this.trustStoreLoader = new TrustStoreLoader.DefaultTrustStoreLoader();
     this.merchantUri = merchantUri;
-    this.issuerDomainName = issuerDomainName;
+    this.issuerName = issuerName;
     parsePaymentRequest(request);
     pkiVerificationData = null; // TODO:Olle Do we need verification? // PaymentProtocol.verifyPaymentRequestPki(request, this.trustStoreLoader.getKeyStore());
   }
@@ -321,7 +321,7 @@ public class StroemPaymentProtocolSession {
     return merchantUri;
   }
 
-  public String getIssuerDomainName() {
-    return issuerDomainName;
+  public String getIssuerName() {
+    return issuerName;
   }
 }

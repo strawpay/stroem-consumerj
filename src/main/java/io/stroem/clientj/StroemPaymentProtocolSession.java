@@ -48,6 +48,7 @@ public class StroemPaymentProtocolSession {
   private Date expiryDate;
   private byte[] stroemData;
   private URI merchantUri;
+  private String issuerDomainName;
 
   /**
    * Stores the calculated PKI verification data, or null if none is available.
@@ -64,19 +65,19 @@ public class StroemPaymentProtocolSession {
    *
    * Note: PKI method cannot be specified yet.
    */
-  public static ListenableFuture<StroemPaymentProtocolSession> createFromStroemUri(final StroemUri uri)
+  public static ListenableFuture<StroemPaymentProtocolSession> createFromStroemUri(final StroemUri uri, final String issuerDomainName)
       throws PaymentProtocolException {
     String url = uri.getStroemParamUriAsString();
     if (url == null)
       throw new PaymentProtocolException.InvalidPaymentRequestURL("No payment request URL (r= parameter) in BitcoinURI " + uri);
     try {
-      return fetchPaymentRequest(new URI(url));
+      return fetchPaymentRequest(new URI(url), issuerDomainName);
     } catch (URISyntaxException e) {
       throw new PaymentProtocolException.InvalidPaymentRequestURL(e);
     }
   }
 
-  private static ListenableFuture<StroemPaymentProtocolSession> fetchPaymentRequest(final URI uri) {
+  private static ListenableFuture<StroemPaymentProtocolSession> fetchPaymentRequest(final URI uri, final String issuerDomainName) {
     return executor.submit(new Callable<StroemPaymentProtocolSession>() {
       @Override
       public StroemPaymentProtocolSession call() throws Exception {
@@ -84,7 +85,7 @@ public class StroemPaymentProtocolSession {
         connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
         connection.setUseCaches(false);
         StroemPpProtos.PaymentRequest paymentRequest = StroemPpProtos.PaymentRequest.parseFrom(connection.getInputStream());
-        return new StroemPaymentProtocolSession(paymentRequest, uri);
+        return new StroemPaymentProtocolSession(paymentRequest, uri, issuerDomainName);
       }
     });
   }
@@ -92,9 +93,10 @@ public class StroemPaymentProtocolSession {
   /**
    * Creates a StroemPaymentProtocolSession from the provided {@link StroemPpProtos.PaymentRequest}.
    */
-  public StroemPaymentProtocolSession(StroemPpProtos.PaymentRequest request, URI merchantUri) throws PaymentProtocolException {
+  public StroemPaymentProtocolSession(StroemPpProtos.PaymentRequest request, URI merchantUri, String issuerDomainName) throws PaymentProtocolException {
     this.trustStoreLoader = new TrustStoreLoader.DefaultTrustStoreLoader();
     this.merchantUri = merchantUri;
+    this.issuerDomainName = issuerDomainName;
     parsePaymentRequest(request);
     pkiVerificationData = null; // TODO:Olle Do we need verification? // PaymentProtocol.verifyPaymentRequestPki(request, this.trustStoreLoader.getKeyStore());
   }
@@ -317,5 +319,9 @@ public class StroemPaymentProtocolSession {
 
   public URI getMerchantUri() {
     return merchantUri;
+  }
+
+  public String getIssuerDomainName() {
+    return issuerDomainName;
   }
 }

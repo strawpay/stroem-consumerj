@@ -324,6 +324,13 @@ public class StroemPaymentProtocolSession {
     return merchantUri;
   }
 
+  /**
+   * @return The top-level domain and second-level domain, ex; "strawpay.com"
+   */
+  public String getMerchantBaseDomainName() {
+    return StroemUriUtil.getBaseDomainNameFromUri(merchantUri);
+  }
+
   public String getIssuerName() {
     return issuerName;
   }

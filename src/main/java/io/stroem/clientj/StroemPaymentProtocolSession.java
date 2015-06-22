@@ -63,21 +63,24 @@ public class StroemPaymentProtocolSession {
    *
    *  An exception is thrown by the future if the signature cannot be verified.
    *
+   * Will add the issuer name as a parameter on the URI before calling.
+   *
    * Note: PKI method cannot be specified yet.
    */
-  public static ListenableFuture<StroemPaymentProtocolSession> createFromStroemUri(final StroemUri uri, final String issuerDomainName)
+  public static ListenableFuture<StroemPaymentProtocolSession> createFromStroemUri(final StroemUri uri, final String issuerName)
       throws PaymentProtocolException {
+    uri.addIssuerName(issuerName);
     String url = uri.getStroemParamUriAsString();
     if (url == null)
       throw new PaymentProtocolException.InvalidPaymentRequestURL("No payment request URL (r= parameter) in BitcoinURI " + uri);
     try {
-      return fetchPaymentRequest(new URI(url), issuerDomainName);
+      return fetchPaymentRequest(new URI(url), issuerName);
     } catch (URISyntaxException e) {
       throw new PaymentProtocolException.InvalidPaymentRequestURL(e);
     }
   }
 
-  private static ListenableFuture<StroemPaymentProtocolSession> fetchPaymentRequest(final URI uri, final String issuerDomainName) {
+  private static ListenableFuture<StroemPaymentProtocolSession> fetchPaymentRequest(final URI uri, final String issuerName) {
     return executor.submit(new Callable<StroemPaymentProtocolSession>() {
       @Override
       public StroemPaymentProtocolSession call() throws Exception {
@@ -85,7 +88,7 @@ public class StroemPaymentProtocolSession {
         connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
         connection.setUseCaches(false);
         StroemPpProtos.PaymentRequest paymentRequest = StroemPpProtos.PaymentRequest.parseFrom(connection.getInputStream());
-        return new StroemPaymentProtocolSession(paymentRequest, uri, issuerDomainName);
+        return new StroemPaymentProtocolSession(paymentRequest, uri, issuerName);
       }
     });
   }

@@ -3,8 +3,6 @@ package io.stroem.clientj.domain;
 
 import org.bitcoinj.uri.BitcoinURI;
 
-import java.util.Objects;
-
 /**
  * <p>StroemUrl to provide the following :</p>
  * <ul>
@@ -21,7 +19,7 @@ public class StroemUri {
   public static String STROEM_ISSUER = "stroem.issuer";
 
   private BitcoinURI bitcoinURI;
-  private String issuerDomainName;
+  private String issuerName;
 
 
   public StroemUri(BitcoinURI bitcoinURI) {
@@ -36,8 +34,8 @@ public class StroemUri {
     return stroemParamObj != null;
   }
 
-  public void addIssuerDomainName(String domainName) {
-    issuerDomainName = domainName;
+  public void addIssuerName(String issuerName) {
+    this.issuerName = issuerName;
   }
 
 
@@ -72,7 +70,7 @@ public class StroemUri {
   /**
    *
    * @param baseUri
-   * @return A string with
+   * @return A string with issuer name added
    */
   private String addIssuer(String baseUri) {
     if (baseUri.indexOf(STROEM_ISSUER) > -1) {
@@ -85,6 +83,6 @@ public class StroemUri {
       // Add the issuer with ampersand instead
       glueChar = "&";
     }
-    return baseUri + glueChar + STROEM_ISSUER + "=" + issuerDomainName;
+    return baseUri + glueChar + STROEM_ISSUER + "=" + issuerName;
   }
 }

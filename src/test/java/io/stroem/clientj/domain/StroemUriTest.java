@@ -24,7 +24,7 @@ public class StroemUriTest {
      StroemUri stroemUri = new StroemUri(bitcoinURI);
     assertTrue(stroemUri.isStroemPayment());
 
-    stroemUri.addIssuerDomainName("olle.com");
+    stroemUri.addIssuerName("olle.com");
     String uriStr = stroemUri.getStroemParamUriAsString();
 
     assertEquals("http://localhost:9000/api/paymentrequest/1636914932393220992?stroem.issuer=olle.com", uriStr);
@@ -40,7 +40,7 @@ public class StroemUriTest {
      StroemUri stroemUri = new StroemUri(bitcoinURI);
     assertTrue(stroemUri.isStroemPayment());
 
-    stroemUri.addIssuerDomainName("olle.com");
+    stroemUri.addIssuerName("olle.com");
     String uriStr = stroemUri.getStroemParamUriAsString();
 
     assertEquals("http://localhost:9000/api/paymentrequest/1636914932393220992?a=1111&stroem.issuer=olle.com", uriStr);
@@ -56,7 +56,7 @@ public class StroemUriTest {
      StroemUri stroemUri = new StroemUri(bitcoinURI);
     assertTrue(stroemUri.isStroemPayment());
 
-    stroemUri.addIssuerDomainName("olle.com");
+    stroemUri.addIssuerName("olle.com");
     String uriStr = stroemUri.getStroemParamUriAsString();
     fail("Should not get here");
 

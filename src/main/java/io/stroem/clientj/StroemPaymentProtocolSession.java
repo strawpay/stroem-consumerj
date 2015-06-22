@@ -314,4 +314,8 @@ public class StroemPaymentProtocolSession {
   public StroemProtos.MerchantPaymentDetails getMerchantPaymentDetails() {
     return merchantPaymentDetails;
   }
+
+  public URI getMerchantUri() {
+    return merchantUri;
+  }
 }

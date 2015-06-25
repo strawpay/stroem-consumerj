@@ -25,10 +25,11 @@ public class StroemMessageReceiver {
 
   private final PaymentChannelClient paymentChannelClient;
 
-  private StroemEntity hubGivenEntity;
+  private StroemEntity issuerGivenEntity; // Who the issuer claims to be
 
-  public StroemEntity getHubGivenEntity() {
-    return hubGivenEntity;
+  // Call this method to get the issuer's Entity after the channel has been initiated
+  public StroemEntity getIssuerGivenEntity() {
+    return issuerGivenEntity;
   }
 
   public StroemMessageReceiver(PaymentChannelClient paymentChannelClient) {
@@ -86,7 +87,7 @@ public class StroemMessageReceiver {
       int serverVersion = msg.getVersion();
       if(serverVersion == StroemClientTcpConnection.CLIENT_STROEM_VERSION) {
         paymentChannelClient.connectionOpen();
-        hubGivenEntity = new StroemEntity(msg.getEntity());
+        issuerGivenEntity = new StroemEntity(msg.getEntity());
         return StroemStep.WAITING_FOR_PAYMENT_CHANNEL_INITIATE;
       } else {
         throw new WrongStroemServerVersionException("Server version should be " + StroemClientTcpConnection.CLIENT_STROEM_VERSION + " but was " + serverVersion);

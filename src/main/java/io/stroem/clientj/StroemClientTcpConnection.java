@@ -1,7 +1,6 @@
 package io.stroem.clientj;
 
 import io.stroem.clientj.domain.StroemNegotiator;
-import io.stroem.promissorynote.ECPaymentInstrumentBitcoinj;
 import io.stroem.promissorynote.PaymentInstrument;
 import org.bitcoinj.core.*;
 import org.bitcoinj.net.NioClient;
@@ -9,7 +8,6 @@ import org.bitcoinj.net.ProtobufParser;
 import org.bitcoinj.protocols.channels.*;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.google.protobuf.InvalidProtocolBufferException;
 import io.stroem.clientj.domain.StroemEntity;
 import io.stroem.proto.StroemProtos;
 import io.stroem.proto.StroemProtos.StroemMessage;
@@ -17,18 +15,13 @@ import io.stroem.javaapi.JavaToScalaBridge;
 
 import com.google.protobuf.ByteString;
 
-import io.stroem.clientj.domain.StroemPromissoryNote;
 import org.bitcoin.paymentchannel.Protos;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.spongycastle.math.ec.ECPoint;
@@ -329,8 +322,8 @@ public class StroemClientTcpConnection {
 
   /**
    * Increments the total value which we pay the server.
-   * A. This method will call the hub and pay the hub using the payment channel.
-   * B. Then it will extract the payment info from the hub's ack, and use it to prepare the negotiation.
+   * A. This method will call the issuer and pay the issuer using the payment channel.
+   * B. Then it will extract the payment info from the issuer's ack, and use it to prepare the negotiation.
    * C. A tailor made Negotiator object will be returned, and the wallet developer is supposed to use it for negotiation.
    * D. When negotiation has been done, the wallet developer should send the new promissory note to the merchant.
    *
@@ -358,13 +351,13 @@ public class StroemClientTcpConnection {
     JavaToScalaBridge.PromissoryNoteRequestReturnBundle returnBundle = JavaToScalaBridge.buildPromissoryNoteRequestProto(merchantPaymentDetailsBytes, myPublicKey);
 
     log.debug("2. Verify that the merchant has the correct issuer public key.");
-    StroemEntity realIssuerProtoEntity = this.stroemMessageReceiver.getHubGivenEntity();
+    StroemEntity realIssuerProtoEntity = this.stroemMessageReceiver.getIssuerGivenEntity();
     verifyIssuerEntity(realIssuerProtoEntity.getName(), realIssuerProtoEntity.getPublicKey(), returnBundle);
 
     StroemProtos.StroemMessage messageRequestProto = returnBundle.getPromissoryNoteRequestProto();
     Coin sizeFromMerchant = returnBundle.getAmount();
 
-    log.debug("3. About to pay the hub (do an incrementPayment call).");
+    log.debug("3. About to pay the issuer (do an incrementPayment call).");
     ListenableFuture<PaymentIncrementAck> ackFuture = paymentChannelClient.incrementPayment(sizeFromMerchant, messageRequestProto.toByteString(), this.userKeySetup);
 
     PaymentIncrementAck ack = ackFuture.get();

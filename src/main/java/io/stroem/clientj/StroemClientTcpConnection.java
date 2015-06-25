@@ -86,6 +86,14 @@ public class StroemClientTcpConnection {
   }
 
   /**
+   * Call this method to get the issuer's Entity after the channel has been initiated.
+   */
+  @Nullable
+  public StroemEntity getIssuerEntity() {
+    return this.stroemMessageReceiver.getIssuerGivenEntity();
+  }
+
+  /**
    * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
    * Blocking until the connection is open
    *

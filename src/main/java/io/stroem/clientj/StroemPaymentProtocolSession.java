@@ -88,6 +88,7 @@ public class StroemPaymentProtocolSession {
         connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
         connection.setUseCaches(false);
         StroemPpProtos.PaymentRequest paymentRequest = StroemPpProtos.PaymentRequest.parseFrom(connection.getInputStream());
+        log.debug("Merchant responded with a (Stroem) payment request ");
         return new StroemPaymentProtocolSession(paymentRequest, uri, issuerName);
       }
     });
@@ -183,6 +184,7 @@ public class StroemPaymentProtocolSession {
       if (request.getPaymentDetailsVersion() != 1)
         throw new PaymentProtocolException.InvalidVersion("Version 1 required. Received version " + request.getPaymentDetailsVersion());
 
+      log.debug("Begin parsing paymentRequest");
       // Get the merchant details from the request
       paymentRequest = request;
       if (!request.hasSerializedPaymentDetails())
@@ -191,8 +193,7 @@ public class StroemPaymentProtocolSession {
       ByteString paymentDetailsBytes = request.getSerializedPaymentDetails();
       StroemPpProtos.PaymentDetails paymentDetails = StroemPpProtos.PaymentDetails.parseFrom(paymentDetailsBytes);
 
-      // Get expires
-      // TODO:Olle Should we get the value from the main paymentDetails?
+      // Get expires (getting it from the main PaymentDetails object)
       if (paymentDetails.hasExpires())
         expiryDate = new Date(paymentDetails.getExpires() * 1000L);
       else
@@ -217,6 +218,7 @@ public class StroemPaymentProtocolSession {
         throw new PaymentProtocolException.InvalidNetwork("Invalid currency " + merchantPaymentDetails.getCurrency());
 
       totalValue = getTotalValue();
+      log.debug("End parsing of payment request");
     } catch (InvalidProtocolBufferException e) {
       throw new PaymentProtocolException(e);
     } catch (IOException  e) {

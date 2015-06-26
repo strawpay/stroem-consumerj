@@ -3,6 +3,8 @@ package io.stroem.clientj.domain;
 
 import org.bitcoinj.uri.BitcoinURI;
 
+import java.util.IllegalFormatCodePointException;
+
 /**
  * <p>StroemUrl to provide the following :</p>
  * <ul>
@@ -48,12 +50,17 @@ public class StroemUri {
    * @return The value of the stroem parameter as a String
    */
   public String getStroemParamUriAsString() {
+    String retUri;
     if (!isStroemPayment()) {
       throw new IllegalStateException("There is no stroem parameter in this URI");
     }
 
     Object stroemParamObj = bitcoinURI.getParameterByName(STROEM_PARAM);
     String stroemParamValue = (String) stroemParamObj;
+    if (stroemParamValue.length() < 1) {
+      throw new IllegalArgumentException("The " + STROEM_PARAM + " parameter must be set in theURI.");
+    }
+
     if (STROEM_PARAM_TRUE_VALUE.equalsIgnoreCase(stroemParamValue)) {
       // The URI must be stored in the other parameter
       Object bip70ParamObj = bitcoinURI.getParameterByName(BIP70_PARAM);
@@ -61,10 +68,14 @@ public class StroemUri {
         throw new IllegalStateException("This is a stroem URI so there must be a " + BIP70_PARAM + " parameter. ");
       } else {
         // Add the issuer domain name before returning
-        stroemParamValue = addIssuer((String) bip70ParamObj);
+        retUri = addIssuer((String) bip70ParamObj);
       }
+    } else {
+      // Then this must be the URI, and we have a pure Stroem URL
+      retUri = addIssuer(stroemParamValue);
+
     }
-    return stroemParamValue;
+    return retUri;
   }
 
   /**

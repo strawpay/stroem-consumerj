@@ -46,7 +46,7 @@ public class StroemPaymentProtocolSession {
   private Coin totalValue;
   private Date creationDate;
   private Date expiryDate;
-  private byte[] stroemData;
+  private byte[] stroemMessageData;
   private URI merchantUri;
   private String issuerName;
 
@@ -199,16 +199,16 @@ public class StroemPaymentProtocolSession {
       else
         expiryDate = null;
 
-      ByteString stroemDataBytes = null;
+      ByteString stroemMessageDataBytes = null;
       if(paymentDetails.hasStroemMessage()) {
-        stroemDataBytes = paymentDetails.getStroemMessage();
+        stroemMessageDataBytes = paymentDetails.getStroemMessage();
       } else {
         throw new RuntimeException("At this point the payment details must have stroem message");
       }
-      stroemData = stroemDataBytes.toByteArray();
+      stroemMessageData = stroemMessageDataBytes.toByteArray();
 
       creationDate = new Date(paymentDetails.getTime() * 1000);
-      merchantPaymentDetails = getMerchantPaymentDetailsFromBytes(stroemDataBytes);
+      merchantPaymentDetails = getMerchantPaymentDetailsFromBytes(stroemMessageDataBytes);
       if (merchantPaymentDetails == null)
         throw new PaymentProtocolException("Invalid PaymentDetails");
 
@@ -273,10 +273,10 @@ public class StroemPaymentProtocolSession {
   }
 
   /**
-   * Will extract the MerchantPaymentDetails object from a binary string in the stroemData field of
+   * Will extract the MerchantPaymentDetails object from a binary string in the stroemMessageData field of
    * the PaymentDetails object
    *
-   * Note: Hopefully our "stroemData" field will be accepted as an extension of the payment protocol later on.
+   * Note: Hopefully our "stroemMessageData" field will be accepted as an extension of the payment protocol later on.
    *
    * @param stroemDataBytes
    * @return The Stroem specific MerchantPaymentDetails object
@@ -324,6 +324,10 @@ public class StroemPaymentProtocolSession {
 
   public URI getMerchantUri() {
     return merchantUri;
+  }
+
+  public byte[] getStroemMessageData() {
+    return stroemMessageData.clone();
   }
 
   /**

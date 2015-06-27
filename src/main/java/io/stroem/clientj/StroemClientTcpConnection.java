@@ -335,7 +335,8 @@ public class StroemClientTcpConnection {
    * C. A tailor made Negotiator object will be returned, and the wallet developer is supposed to use it for negotiation.
    * D. When negotiation has been done, the wallet developer should send the new promissory note to the merchant.
    *
-   * @param merchantPaymentDetailsBytes The (protobuf) message received from the merchant, containing Payment Details.
+   * @param merchantPaymentDetailsBytes The raw data from the "stroem_message" field in the PaymentDetails protobuf message
+   *                                    received from the merchant.
    * @param myTransactionKey - A (potentially new) key pair that will be used during this transaction. Must be used to sign the
    *                later.
    * @return StroemNegotiator - use this object to sign and negotiate the promissory note.

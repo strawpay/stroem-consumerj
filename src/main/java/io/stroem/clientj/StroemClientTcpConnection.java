@@ -97,7 +97,7 @@ public class StroemClientTcpConnection {
    * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
    * Blocking until the connection is open
    *
-   * @param server The host where the server is listening.
+   * @param issuerHost The host where the issuer server is listening.
    * @param socketTimeoutSeconds The connection timeout and read timeout during initialization. This should be large enough
    *                       to accommodate ECDSA signature operations and network latency.
    * @param paymentChannelTimeoutSeconds How long the payment channel should stay open. Server not care about this value.
@@ -107,15 +107,17 @@ public class StroemClientTcpConnection {
    * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    * @param maxValue The maximum value this channel is allowed to request
    * @param serverId A unique ID which is used to attempt reopening of an existing channel.
-   *                 This must be unique to the server, and, if your application is exposing payment channels to some
-   *                 API, this should also probably encompass some caller UID to avoid applications opening channels
-   *                 which were created by others.
+   *                 For a normal wallet this value is typically the same as "issuerHost".
+   *                 But, if your application is exposing payment channels to some  API,
+   *                 you might want to add caller UID to be able to separate the channels
+   *                 (to avoid applications opening channels that were created by others).
    *
    * @throws java.io.IOException if there's an issue using the network.
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
-  public StroemClientTcpConnection(String server, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet, ECKey myKey,
-                                   @Nullable KeyParameter userKeySetup, Coin maxValue, String serverId) throws IOException, ValueOutOfRangeException {
+  public StroemClientTcpConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+                                   ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue, String serverId
+      ) throws IOException, ValueOutOfRangeException {
 
     // Initiate some members
     this.wallet = wallet;
@@ -148,7 +150,7 @@ public class StroemClientTcpConnection {
     wireParser = new ProtobufParser<StroemMessage>(stroemMessageListener, defaultInstance, Short.MAX_VALUE, socketTimeoutSeconds*1000);
 
     log.debug("Start NIO");
-    InetSocketAddress inetSocketAddress = new InetSocketAddress(server, STROEM_PORT);
+    InetSocketAddress inetSocketAddress = new InetSocketAddress(issuerHost, STROEM_PORT);
     // Initiate the outbound network connection. We don't need to keep this around. The wireParser object will handle
     // things from here on out.
     new NioClient(inetSocketAddress, wireParser, socketTimeoutSeconds * 1000);

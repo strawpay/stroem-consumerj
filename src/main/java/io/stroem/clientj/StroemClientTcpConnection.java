@@ -95,7 +95,34 @@ public class StroemClientTcpConnection {
 
   /**
    * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
-   * Blocking until the connection is open
+   * Blocking until the connection is open.
+   *
+   * Use this constructor if you're building a wallet.
+   *
+   * @param issuerHost The host where the issuer server is listening. There can only be one connection per host!
+   * @param socketTimeoutSeconds The connection timeout and read timeout during initialization. This should be large enough
+   *                       to accommodate ECDSA signature operations and network latency.
+   * @param paymentChannelTimeoutSeconds How long the payment channel should stay open. Server not care about this value.
+   * @param wallet The wallet which will be paid from, and where completed transactions will be committed.
+   *               Must already have a {@link StoredPaymentChannelClientStates} object in its extensions set.
+   * @param myKey A freshly generated keypair used for the multisig contract and refund output.
+   * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
+   * @param maxValue The maximum value this channel is allowed to request
+   *
+   * @throws java.io.IOException if there's an issue using the network.
+   * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
+   */
+  public StroemClientTcpConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+                                   ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
+  ) throws IOException, ValueOutOfRangeException {
+    this(issuerHost, socketTimeoutSeconds, paymentChannelTimeoutSeconds, wallet, myKey, userKeySetup, maxValue, issuerHost);
+  }
+
+  /**
+   * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
+   * Blocking until the connection is open.
+   *
+   * Use this constructor if you have need of the "serverId" param.
    *
    * @param issuerHost The host where the issuer server is listening.
    * @param socketTimeoutSeconds The connection timeout and read timeout during initialization. This should be large enough

@@ -1,5 +1,7 @@
 package io.stroem.clientj;
 
+import io.stroem.clientj.domain.StroemId;
+import io.stroem.clientj.domain.StroemIdSimple;
 import io.stroem.clientj.domain.StroemNegotiator;
 import io.stroem.promissorynote.PaymentInstrument;
 import org.bitcoinj.core.*;
@@ -97,14 +99,14 @@ public class StroemClientTcpConnection {
    * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
    * Blocking until the connection is open.
    *
-   * Use this constructor if you're building a wallet.
+   * Use this constructor if you are building a normal wallet
    *
-   * @param issuerHost The host where the issuer server is listening. There can only be one connection per host!
+   * @param stroemIdSimple The host where the issuer server is listening, also the ID of the payment channel.
    * @param socketTimeoutSeconds The connection timeout and read timeout during initialization. This should be large enough
    *                       to accommodate ECDSA signature operations and network latency.
    * @param paymentChannelTimeoutSeconds How long the payment channel should stay open. Server not care about this value.
    * @param wallet The wallet which will be paid from, and where completed transactions will be committed.
-   *               Must already have a {@link StoredPaymentChannelClientStates} object in its extensions set.
+   *               Must already have a {@link org.bitcoinj.protocols.channels.StoredPaymentChannelClientStates} object in its extensions set.
    * @param myKey A freshly generated keypair used for the multisig contract and refund output.
    * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    * @param maxValue The maximum value this channel is allowed to request
@@ -112,10 +114,10 @@ public class StroemClientTcpConnection {
    * @throws java.io.IOException if there's an issue using the network.
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
-  public StroemClientTcpConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
-                                   ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
+  StroemClientTcpConnection(StroemIdSimple stroemIdSimple, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+                            ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
   ) throws IOException, ValueOutOfRangeException {
-    this(issuerHost, socketTimeoutSeconds, paymentChannelTimeoutSeconds, wallet, myKey, userKeySetup, maxValue, issuerHost);
+    this(stroemIdSimple.getIssuerUriHost(), socketTimeoutSeconds, paymentChannelTimeoutSeconds, wallet, myKey, userKeySetup, maxValue, stroemIdSimple);
   }
 
   /**
@@ -129,27 +131,24 @@ public class StroemClientTcpConnection {
    *                       to accommodate ECDSA signature operations and network latency.
    * @param paymentChannelTimeoutSeconds How long the payment channel should stay open. Server not care about this value.
    * @param wallet The wallet which will be paid from, and where completed transactions will be committed.
-   *               Must already have a {@link StoredPaymentChannelClientStates} object in its extensions set.
+   *               Must already have a {@link org.bitcoinj.protocols.channels.StoredPaymentChannelClientStates} object in its extensions set.
    * @param myKey A freshly generated keypair used for the multisig contract and refund output.
    * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    * @param maxValue The maximum value this channel is allowed to request
    * @param serverId A unique ID which is used to attempt reopening of an existing channel.
-   *                 For a normal wallet this value is typically the same as "issuerHost".
-   *                 But, if your application is exposing payment channels to some  API,
-   *                 you might want to add caller UID to be able to separate the channels
-   *                 (to avoid applications opening channels that were created by others).
+   *
    *
    * @throws java.io.IOException if there's an issue using the network.
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
-  public StroemClientTcpConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
-                                   ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue, String serverId
+  StroemClientTcpConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+                                   ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue, StroemId serverId
       ) throws IOException, ValueOutOfRangeException {
 
     // Initiate some members
     this.wallet = wallet;
-    this.serverIdName = serverId;
-    this.serverIdHash = StroemClientUtil.makeServerIdFromString(serverId);
+    this.serverIdName = serverId.getServerId();
+    this.serverIdHash = serverId.getRealPaymentChannelServerId();
     this.myKey = myKey;
     this.maxValue = maxValue;
     this.paymentChannelTimeoutSeconds = paymentChannelTimeoutSeconds;

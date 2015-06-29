@@ -13,7 +13,7 @@ public class StroemIdComplex extends StroemId {
   /**
    * @param serverId - You can use anything as id
    */
-  StroemIdComplex(String serverId) {
+  public StroemIdComplex(String serverId) {
     this.serverId = serverId;
   }
 }

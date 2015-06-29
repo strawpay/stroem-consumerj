@@ -11,17 +11,22 @@ import java.net.URI;
  * We recommend you to use this class if you are building a normal wallet.
  */
 public class StroemIdSimple extends StroemId {
-  private String issuerUriHost;
+  private URI uri;
 
   /**
    * @param issuerUri - The simple way is to only use the Issuer's URI host as ID, recommended for normal wallets
    */
-  StroemIdSimple(URI issuerUri) {
-    this.issuerUriHost = issuerUri.getHost();
+  public StroemIdSimple(URI issuerUri) {
+    this.uri = uri;
+    this.serverId = issuerUri.getHost();
   }
 
   public String getIssuerUriHost() {
-    return issuerUriHost;
+    return serverId;
+  }
+
+  public URI getIssuerURI() {
+    return uri;
   }
 
 

@@ -114,7 +114,7 @@ public class StroemClientTcpConnection {
    * @throws java.io.IOException if there's an issue using the network.
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
-  StroemClientTcpConnection(StroemIdSimple stroemIdSimple, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+  public StroemClientTcpConnection(StroemIdSimple stroemIdSimple, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
                             ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
   ) throws IOException, ValueOutOfRangeException {
     this(stroemIdSimple.getIssuerUriHost(), socketTimeoutSeconds, paymentChannelTimeoutSeconds, wallet, myKey, userKeySetup, maxValue, stroemIdSimple);
@@ -141,7 +141,7 @@ public class StroemClientTcpConnection {
    * @throws java.io.IOException if there's an issue using the network.
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
-  StroemClientTcpConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+  public StroemClientTcpConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
                                    ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue, StroemId serverId
       ) throws IOException, ValueOutOfRangeException {
 

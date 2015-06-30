@@ -265,6 +265,7 @@ public class StroemClientTcpConnection {
       @Override
       public void channelOpen(boolean wasInitiated) {
         log.info("Payment channel {}", wasInitiated ? "was initiated." : "found.");
+        stroemStep = StroemStep.CONNECTION_OPEN;
         freshChannel = wasInitiated;
         wireParser.setSocketTimeout(0); // We will set the timeout on the socket instead
         channelOpenFuture.set(StroemClientTcpConnection.this);

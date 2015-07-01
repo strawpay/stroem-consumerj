@@ -1,0 +1,64 @@
+/*
+ * This protobuf defines extra data that is stored with payment channels used by Stroem
+ * (This is in addition to that stored in the wallet protobuf, which is 'owned' by bitcoinj)
+ * It should be possible for a wallet developer to use this storage mechanism,
+ *
+ */
+
+/* Notes:
+ * - To regenerate after editing, run ...
+ */
+
+option java_package = "io.stroem.clientj.persistence.proto";
+option java_outer_classname = "StroemPCWrapperProtos";
+
+/*
+ * Extra information about the payment channel needed by Stroem.
+ * (some of this data is also possible to retrieve from the bitcoinj funding transaction)
+ *
+ * This message holds the creation parameters of the channel, not much mutable state.
+ * For example, StroemPaymentChannel will not know if the channel is closed or the amount consumed.
+ *
+ * Note: You can use this data to open a new channel, identical to the first, when the original has been closed,
+ * with the exception of fiat_max_value (will change with the currency volatility).
+ */
+message StroemPaymentChannelProto {
+    // Required fields
+    required string hash = 1;                       // The founding transaction hash (i.e. the transaction id as per
+                                                    // the wallet Transaction.hash.toString).
+                                                    // The corresponding transaction is expected to be in the wallet.
+    required string issuer_uri = 2;                 // The URI to the payment channel server.
+    required string issuer_name = 3;                // Issuer's identification name (given to us by the issuer)
+    required int64 max_value = 4;                   // How much value (in satoshis) is locked up into the channel.
+    required int64 timeout_seconds = 5;             // The duration of the payment channel, in seconds
+    required bytes public_ec_key = 6;               // The public part of the ECKey used during channel creation.
+
+    // Optional fields (used by some wallets)
+    optional string serverId = 7;                   // The payment channels serverId. If not present,
+                                                    // serverId will be set to the host name of the issuer uri.
+    optional int64 miner_fee = 8;                   // The miner fee (in satoshi).
+    optional double fiat_max_value = 9;             // The fiat value corresponding to the max value of the channel.
+                                                    // Used if you want to record this amount for accounting.
+    optional string fiat_currency = 10;             // The name of the fiat currence of "fiat_max_value"
+    optional string note = 11;                      // A note can be added when the payment channel is created
+}
+
+/*
+ * Only used if the wallet can have many open payment channels concurrently,
+ * and you have a need to quickly find the channel the user prefers.
+ */
+message PreferredStroemPaymentChannelProto {
+    required string hash = 1;                       // The founding transaction hash, used to find the preferred channel
+    required string issuer_name = 2;                // If the preferred channel has timed out, use this value to
+                                                    // pick another channel with the same issuer.
+}
+
+/*
+ * A collection of stroem payment channels
+ */
+message StroemPaymentChannelProtos {
+    repeated StroemPaymentChannelProto stroem_payment_channel = 1;       // the stroem payment channel, repeated
+    optional PreferredStroemPaymentChannelProto preferred_channel = 2;   // if there is a preferred channel.
+}
+
+

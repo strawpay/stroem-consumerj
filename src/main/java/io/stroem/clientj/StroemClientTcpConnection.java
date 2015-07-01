@@ -1,8 +1,6 @@
 package io.stroem.clientj;
 
-import io.stroem.clientj.domain.StroemId;
-import io.stroem.clientj.domain.StroemIdSimple;
-import io.stroem.clientj.domain.StroemNegotiator;
+import io.stroem.clientj.domain.*;
 import io.stroem.promissorynote.PaymentInstrument;
 import org.bitcoinj.core.*;
 import org.bitcoinj.net.NioClient;
@@ -10,7 +8,6 @@ import org.bitcoinj.net.ProtobufParser;
 import org.bitcoinj.protocols.channels.*;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import io.stroem.clientj.domain.StroemEntity;
 import io.stroem.proto.StroemProtos;
 import io.stroem.proto.StroemProtos.StroemMessage;
 import io.stroem.javaapi.JavaToScalaBridge;
@@ -93,6 +90,31 @@ public class StroemClientTcpConnection {
   @Nullable
   public StroemEntity getIssuerEntity() {
     return this.stroemMessageReceiver.getIssuerGivenEntity();
+  }
+
+
+  /**
+   * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
+   * Blocking until the connection is open.
+   *
+   * Use this constructor if you are building a normal wallet
+   *
+   * @param stroemPaymentChannel Meta data for the channel
+   * @param socketTimeoutSeconds The connection timeout and read timeout during initialization. This should be large enough
+   *                       to accommodate ECDSA signature operations and network latency.
+   * @param wallet The wallet which will be paid from, and where completed transactions will be committed.
+   *               Must already have a {@link org.bitcoinj.protocols.channels.StoredPaymentChannelClientStates} object in its extensions set.
+   * @param myKey A freshly generated keypair used for the multisig contract and refund output.
+   * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
+   *
+   * @throws java.io.IOException if there's an issue using the network.
+   * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
+   */
+  public StroemClientTcpConnection(StroemPaymentChannel stroemPaymentChannel, int socketTimeoutSeconds, Wallet wallet,
+                                   ECKey myKey, @Nullable KeyParameter userKeySetup
+  ) throws IOException, ValueOutOfRangeException {
+    this(stroemPaymentChannel.getIssuerHost(), socketTimeoutSeconds, stroemPaymentChannel.getTimeoutSeconds(),
+        wallet, myKey, userKeySetup, stroemPaymentChannel.getMaxValue(), stroemPaymentChannel.getStroemId());
   }
 
   /**

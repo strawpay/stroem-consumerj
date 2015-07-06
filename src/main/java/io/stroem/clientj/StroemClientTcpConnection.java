@@ -237,14 +237,17 @@ public class StroemClientTcpConnection {
       // PaymentChannel protobuf objects need to be transformed to Stroem protobuf and sent via TCP.
       @Override
       public void sendToServer(Protos.TwoWayChannelMessage paymentMsg) {
-        log.debug("Sending Payment Channel message of type: " + paymentMsg.getType());
+        log.debug("1. Sending Payment Channel message of type: " + paymentMsg.getType());
         StroemProtos.PaymentChannelMessage stroemPaymentChannelMsg = StroemProtos.PaymentChannelMessage.newBuilder()
             .setPaymentChannelMessage(paymentMsg.toByteString()).build();
+        log.debug("2. ");
         StroemMessage msg = StroemMessage.newBuilder()
             .setType(StroemMessage.MessageType.PAYMENTCHANNEL_MESSAGE)
             .setPaymentChannelMessage(stroemPaymentChannelMsg)
             .build();
-        wireParser.write(msg);
+        log.debug("3. ");
+          wireParser.write(msg);
+        log.debug("4. Written to protobuf parser.");
       }
 
       // This method is a bit messy, There might be a simpler way to figure out what error case should go where.

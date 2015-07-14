@@ -1,3 +1,5 @@
+package io.stroem.payment;
+
 
 import com.google.protobuf.ByteString;
 import org.junit.Test;

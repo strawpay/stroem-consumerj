@@ -1,8 +1,5 @@
 package io.stroem.clientj.domain;
 
-import io.stroem.clientj.StroemClientUtil;
-import org.bitcoinj.core.Sha256Hash;
-
 import java.net.URI;
 
 /**

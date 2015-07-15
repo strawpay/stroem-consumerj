@@ -14,7 +14,7 @@ public class StroemIdSimple extends StroemId {
    * @param issuerUri - The simple way is to only use the Issuer's URI host as ID, recommended for normal wallets
    */
   public StroemIdSimple(URI issuerUri) {
-    this.uri = uri;
+    this.uri = issuerUri;
     this.serverId = issuerUri.getHost();
   }
 

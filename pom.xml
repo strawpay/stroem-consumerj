@@ -6,11 +6,11 @@
 
     <groupId>io.stroem</groupId>
     <artifactId>stroem-bitcoinjclient</artifactId>
-    <version>1.43.0</version>
+    <version>1.44.0</version>
 
   <properties>
     <slf4j.version>1.7.6</slf4j.version>
-    <stroem.version>0.2.2-8-gfda01e8</stroem.version>
+    <stroem.version>0.2.2-9-gb14e30f</stroem.version>
   </properties>
 
 
@@ -172,7 +172,8 @@
     <dependency>
       <groupId>org.bitcoinj</groupId>
       <artifactId>bitcoinj-core</artifactId>
-      <version>0.13-alice-SNAPSHOT</version>
+      <version>0.13.1</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Stroem protocol client API classes -->

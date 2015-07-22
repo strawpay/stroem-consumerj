@@ -428,7 +428,7 @@ public class StroemClientTcpConnection {
     ByteString infoByteString = ack.getInfo();
     PaymentInstrument.PromissoryNote promissoryNote = JavaToScalaBridge.buildPromissoryNoteFromBytes(infoByteString);
     ECPoint merchantPublicKey = returnBundle.getMerchantPublicKey();
-    PaymentInstrument.NegotiateInfo negotiateInfo = JavaToScalaBridge.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, returnBundle.getDisplayText().getBytes());
+    PaymentInstrument.NegotiateInfo negotiateInfo = JavaToScalaBridge.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, returnBundle.getDisplayText().getBytes()); // Todo Should be encoded as PaymentInfo
 
     log.debug("6. End (return StroemNegotiator).");
     return new StroemNegotiator(negotiateInfo);

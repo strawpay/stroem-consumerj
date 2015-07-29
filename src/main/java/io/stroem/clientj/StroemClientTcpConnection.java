@@ -1,5 +1,6 @@
 package io.stroem.clientj;
 
+import io.stroem.api.Messages;
 import io.stroem.clientj.domain.*;
 import io.stroem.promissorynote.PaymentInstrument;
 import org.bitcoinj.core.*;
@@ -431,7 +432,8 @@ public class StroemClientTcpConnection {
     ByteString infoByteString = ack.getInfo();
     PaymentInstrument.PromissoryNote promissoryNote = JavaToScalaBridge.buildPromissoryNoteFromBytes(infoByteString);
     ECPoint merchantPublicKey = returnBundle.getMerchantPublicKey();
-    PaymentInstrument.NegotiateInfo negotiateInfo = JavaToScalaBridge.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, infoByteString.toByteArray());
+    final PaymentInstrument.PaymentInfo paymentInfo = Messages.displayTextToPaymentInfo(returnBundle.getDisplayText());
+    PaymentInstrument.NegotiateInfo negotiateInfo = JavaToScalaBridge.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, paymentInfo.bytes());
 
     log.debug("6. End (return StroemNegotiator).");
     return new StroemNegotiator(negotiateInfo);

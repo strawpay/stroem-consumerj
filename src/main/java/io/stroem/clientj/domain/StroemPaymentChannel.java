@@ -23,7 +23,7 @@ public class StroemPaymentChannel {
 
 
 
-  // ----------------- Requered fields ------------------------
+  // ----------------- Required fields ------------------------
 
   /**
    * The "soft" id of the channel, Many channels can have the same id, but only one of them can open channel at the same time.

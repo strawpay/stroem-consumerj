@@ -5,7 +5,7 @@ import io.stroem.proto.StroemProtos;
 
 
 /**
- * Describes a participant in the Stroem network. Has a name and a public key.
+ * Describes a participant (a participant is a client, merchant or hub?) in the Stroem network. Has a name and a public key.
  */
 public class StroemEntity {
 

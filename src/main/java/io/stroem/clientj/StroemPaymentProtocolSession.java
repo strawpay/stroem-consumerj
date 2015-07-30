@@ -4,11 +4,14 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+
 import io.stroem.api.Messages;
 import io.stroem.clientj.domain.*;
 import io.stroem.javaapi.JavaToScalaBridge;
 import io.stroem.proto.StroemProtos;
+import io.stroem.paymentprotocol.StroemPaymentProtocol;
 import io.stroem.paymentprotocol.StroemPpProtos;
+
 import org.bitcoin.protocols.payments.Protos;
 import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.TrustStoreLoader;
@@ -20,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.net.*;
 import java.util.Date;
@@ -159,7 +163,7 @@ public class StroemPaymentProtocolSession {
       @Override
       public StroemPaymentReceipt call() throws Exception {
         HttpURLConnection connection = (HttpURLConnection) merchantUri.toURL().openConnection();
-        connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENT);
+        connection.setRequestProperty("Accept", StroemPaymentProtocol.MIMETYPE_PAYMENTACK);
         connection.setUseCaches(false);
         // Get the stroem message first
         StroemProtos.StroemMessage stroemMessageReply = StroemProtos.StroemMessage.parseFrom(connection.getInputStream());

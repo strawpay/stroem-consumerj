@@ -63,18 +63,15 @@ public class StroemPaymentProtocolSession {
    *
    *  An exception is thrown by the future if the signature cannot be verified.
    *
-   * Will add the issuer name as a parameter on the URI before calling.
-   *
    * Note: PKI method cannot be specified yet.
    */
-  public static ListenableFuture<StroemPaymentProtocolSession> createFromStroemUri(final StroemUri uri, final String issuerName)
+  public static ListenableFuture<StroemPaymentProtocolSession> createFromStroemUri(final StroemUri stroemUri)
       throws PaymentProtocolException {
-    uri.addIssuerName(issuerName);
-    String url = uri.getStroemParamUriAsString();
-    if (url == null)
-      throw new PaymentProtocolException.InvalidPaymentRequestURL("No payment request URL (r= parameter) in BitcoinURI " + uri);
+    String uri = stroemUri.getStroemParamUriAsString();
+    if (uri == null)
+      throw new PaymentProtocolException.InvalidPaymentRequestURL("No payment request URL (r= parameter) in BitcoinURI " + stroemUri);
     try {
-      return fetchPaymentRequest(new URI(url), issuerName);
+      return fetchPaymentRequest(new URI(uri), stroemUri.getIssuerName());
     } catch (URISyntaxException e) {
       throw new PaymentProtocolException.InvalidPaymentRequestURL(e);
     }

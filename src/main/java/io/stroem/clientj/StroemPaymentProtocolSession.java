@@ -42,6 +42,7 @@ public class StroemPaymentProtocolSession {
   private NetworkParameters params;
   private final TrustStoreLoader trustStoreLoader; // Not used as of now
   private StroemPpProtos.PaymentRequest paymentRequest;
+  private StroemPpProtos.PaymentDetails paymentDetails;
   private StroemProtos.MerchantPaymentDetails merchantPaymentDetails;
   private Coin totalValue;
   private Date creationDate;
@@ -188,7 +189,7 @@ public class StroemPaymentProtocolSession {
         throw new PaymentProtocolException("No PaymentDetails");
 
       ByteString paymentDetailsBytes = request.getSerializedPaymentDetails();
-      StroemPpProtos.PaymentDetails paymentDetails = StroemPpProtos.PaymentDetails.parseFrom(paymentDetailsBytes);
+      paymentDetails = StroemPpProtos.PaymentDetails.parseFrom(paymentDetailsBytes);
 
       // Get expires (getting it from the main PaymentDetails object)
       if (paymentDetails.hasExpires())
@@ -337,4 +338,27 @@ public class StroemPaymentProtocolSession {
   public String getIssuerName() {
     return issuerName;
   }
+  
+  /**
+   * Returns the payment url where the Payment message should be sent.
+   * Returns null if no payment url was provided in the PaymentRequest.
+   */
+  @Nullable
+  public String getPaymentUrl() {
+      if (paymentDetails.hasPaymentUrl())
+          return paymentDetails.getPaymentUrl();
+      return null;
+  }
+ 
+  /**
+   * Returns the merchant data included by the merchant in the payment request, or null if none.
+   */
+  @Nullable 
+  public byte[] getMerchantData() {
+      if (paymentDetails.hasMerchantData())
+          return paymentDetails.getMerchantData().toByteArray();
+      else
+          return null;
+  }
+  
 }

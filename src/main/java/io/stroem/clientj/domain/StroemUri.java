@@ -71,12 +71,17 @@ public class StroemUri extends BitcoinURI {
    *
    * @return The value of the stroem parameter as a String
    */
-  public String getStroemParamUriAsString() {
-    String retUri;
-    if (!isStroemPayment()) {
-      throw new IllegalStateException("There is no stroem parameter in this URI");
+  @Override
+  public String getPaymentRequestUrl() {
+    if (isStroemPayment()) {
+      return getStroemPaymenRequestUrl();
+    } else {
+      return super.getPaymentRequestUrl();
     }
+  }
 
+  private String getStroemPaymenRequestUrl() {
+    String retUri;
     Object stroemParamObj = getParameterByName(STROEM_PARAM);
     String stroemParamValue = (String) stroemParamObj;
     if (stroemParamValue.length() < 1) {

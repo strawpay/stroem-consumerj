@@ -26,7 +26,7 @@ public class StroemUriTest {
     assertTrue(stroemUri.isStroemPayment());
 
     stroemUri.addIssuerName("a");
-    String destUri = stroemUri.getStroemParamUriAsString();
+    String destUri = stroemUri.getPaymentRequestUrl();
 
     System.out.println("Dest URI: " + destUri);
     assertEquals("http://localhost:9000/api/paymentrequest/7237482603553792996?stroem.issuer=a", destUri);
@@ -44,7 +44,7 @@ public class StroemUriTest {
     assertTrue(stroemUri.isStroemPayment());
 
     stroemUri.addIssuerName("olle.com");
-    String uriStr = stroemUri.getStroemParamUriAsString();
+    String uriStr = stroemUri.getPaymentRequestUrl();
 
     assertEquals("http://localhost:9000/api/paymentrequest/1636914932393220992?stroem.issuer=olle.com", uriStr);
   }
@@ -60,7 +60,7 @@ public class StroemUriTest {
     assertTrue(stroemUri.isStroemPayment());
 
     stroemUri.addIssuerName("olle.com");
-    String uriStr = stroemUri.getStroemParamUriAsString();
+    String uriStr = stroemUri.getPaymentRequestUrl();
 
     assertEquals("http://localhost:9000/api/paymentrequest/1636914932393220992?a=1111&stroem.issuer=olle.com", uriStr);
   }
@@ -76,7 +76,7 @@ public class StroemUriTest {
     assertTrue(stroemUri.isStroemPayment());
 
     stroemUri.addIssuerName("olle.com");
-    String uriStr = stroemUri.getStroemParamUriAsString();
+    String uriStr = stroemUri.getPaymentRequestUrl();
 
     System.out.println("Dest URI: " + uriStr);
     assertEquals("http://localhost:9000/api/paymentrequest/7237482603553792996?stroem.issuer=olle.com", uriStr);
@@ -95,7 +95,7 @@ public class StroemUriTest {
     assertTrue(stroemUri.isStroemPayment());
 
     stroemUri.addIssuerName("olle.com");
-    String uriStr = stroemUri.getStroemParamUriAsString();
+    String uriStr = stroemUri.getPaymentRequestUrl();
     fail("Should not get here");
 
   }

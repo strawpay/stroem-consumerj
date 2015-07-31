@@ -72,7 +72,7 @@ public class StroemPaymentProtocolSession {
    */
   public static ListenableFuture<StroemPaymentProtocolSession> createFromStroemUri(final StroemUri stroemUri)
       throws PaymentProtocolException {
-    String uri = stroemUri.getStroemParamUriAsString();
+    String uri = stroemUri.getPaymentRequestUrl();
     if (uri == null)
       throw new PaymentProtocolException.InvalidPaymentRequestURL("No payment request URL (r= parameter) in BitcoinURI " + stroemUri);
     try {

@@ -30,30 +30,34 @@ import java.util.Date;
 import java.util.concurrent.Callable;
 
 /**
- * <p>StroemPaymentProtocolSession to provide the following :</p>
- * <ul>
- * <li>A payment protocol session to the merchant server.</li>
- * <li>.</li>
- * </ul>
+ * <p>Represents a Stroem payment protocol session to the merchant server.</p>
  *
- * @since 0.0.1
+ * <p>This class corresponds to the {@link org.bitcoinj.protocols.payments.PaymentSession} class for
+ * BIP70 payment protocol in bitcoinj, and the reason we don't extend
+ * {@link org.bitcoinj.protocols.payments.PaymentSession} directly is that we don't have a corresponding getPayment()
+ * (Stroem will not send a PAYMENT to the merchant, but a promissory note).
+ * </p>
+ *
+ * <p>So, instead we extend {@link PaymentProtocolSessionCoreData}, representing the fields that
+ * are common for both these classes.
+ * (Hopefully, {@link org.bitcoinj.protocols.payments.PaymentSession} will use the same base class later on)
+ * </p>
+ *
  */
-public class StroemPaymentProtocolSession {
+public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData {
 
   private static final Logger log = LoggerFactory.getLogger(StroemPaymentProtocolSession.class);
 
   private static ListeningExecutorService executor = Threading.THREAD_POOL;
   private NetworkParameters params;
   private final TrustStoreLoader trustStoreLoader; // Not used as of now
-  private StroemPpProtos.PaymentRequest paymentRequest;
-  private StroemPpProtos.PaymentDetails paymentDetails;
+
+  // Stroem specific fields
   private StroemProtos.MerchantPaymentDetails merchantPaymentDetails;
-  private Coin totalValue;
-  private Date creationDate;
-  private Date expiryDate;
   private byte[] stroemMessageData;
   private URI merchantUri;
   private String issuerName;
+
 
   /**
    * Stores the calculated PKI verification data, or null if none is available.
@@ -66,7 +70,7 @@ public class StroemPaymentProtocolSession {
    * uri is a BIP-72-style Stroem URI object that specifies where the {@link StroemPpProtos.PaymentRequest} object may
    * be fetched, usually in the r= parameter.
    *
-   *  An exception is thrown by the future if the signature cannot be verified.
+   * An exception is thrown by the future if the signature cannot be verified.
    *
    * Note: PKI method cannot be specified yet.
    */
@@ -100,6 +104,7 @@ public class StroemPaymentProtocolSession {
    * Creates a StroemPaymentProtocolSession from the provided {@link StroemPpProtos.PaymentRequest}.
    */
   public StroemPaymentProtocolSession(StroemPpProtos.PaymentRequest request, URI merchantUri, String issuerName) throws PaymentProtocolException {
+    super(request);
     this.trustStoreLoader = new TrustStoreLoader.DefaultTrustStoreLoader();
     this.merchantUri = merchantUri;
     this.issuerName = issuerName;
@@ -109,52 +114,7 @@ public class StroemPaymentProtocolSession {
 
 
   /**
-   * Returns the memo included by the merchant in the payment request, or null if not found.
-   */
-  @Nullable public String getMemo() {
-    if (merchantPaymentDetails.hasDisplayText())
-      return merchantPaymentDetails.getDisplayText();
-    else
-      return null;
-  }
-
-  /**
-   * Returns the total amount of bitcoins requested.
-   */
-  public Coin getValue() {
-    return totalValue;
-  }
-
-  /**
-   * Returns the date that the payment request was generated.
-   * Use new instance since Date is unreliable.
-   */
-  public Date getDate() {
-    return new Date(creationDate.getTime());
-  }
-
-  /**
-   * Returns the expires time of the payment request, or null if none.
-   */
-  @Nullable public Date getExpires() {
-    return expiryDate;
-  }
-
-  /**
-   * This should always be called before attempting to call pay
-   */
-  public boolean isExpired() {
-    Date expires = getExpires();
-    if (expires != null) {
-      return System.currentTimeMillis() > expires.getTime();
-    } else {
-      return false;
-    }
-  }
-
-  /**
    * Sends the negotiated note to the merchant.
-   * Will use the same URI as we used to get the payment request.
    *
    * @param stroemMessage to send to the merchant
    */
@@ -162,7 +122,8 @@ public class StroemPaymentProtocolSession {
     return executor.submit(new Callable<StroemPaymentReceipt>() {
       @Override
       public StroemPaymentReceipt call() throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) merchantUri.toURL().openConnection();
+        URI uri = new URI(getPaymentUrl());
+        HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
         connection.setRequestProperty("Accept", StroemPaymentProtocol.MIMETYPE_PAYMENTACK);
         connection.setUseCaches(false);
         // Get the stroem message first
@@ -180,26 +141,28 @@ public class StroemPaymentProtocolSession {
   }
 
   private void parsePaymentRequest(StroemPpProtos.PaymentRequest request) throws PaymentProtocolException {
+    Coin totalValue;
+    Date creationDate;
+    Date expiryDate;
+    String memo;
+    String paymentUrl;
+
+    StroemPpProtos.PaymentDetails paymentDetails;
+
     try {
       if (request == null)
         throw new PaymentProtocolException("request cannot be null");
       if (request.getPaymentDetailsVersion() != 1)
         throw new PaymentProtocolException.InvalidVersion("Version 1 required. Received version " + request.getPaymentDetailsVersion());
 
+      // ===================================
       log.debug("Begin parsing paymentRequest");
       // Get the merchant details from the request
-      paymentRequest = request;
       if (!request.hasSerializedPaymentDetails())
         throw new PaymentProtocolException("No PaymentDetails");
 
       ByteString paymentDetailsBytes = request.getSerializedPaymentDetails();
       paymentDetails = StroemPpProtos.PaymentDetails.parseFrom(paymentDetailsBytes);
-
-      // Get expires (getting it from the main PaymentDetails object)
-      if (paymentDetails.hasExpires())
-        expiryDate = new Date(paymentDetails.getExpires() * 1000L);
-      else
-        expiryDate = null;
 
       ByteString stroemMessageDataBytes = null;
       if(paymentDetails.hasStroemMessage()) {
@@ -209,7 +172,6 @@ public class StroemPaymentProtocolSession {
       }
       stroemMessageData = stroemMessageDataBytes.toByteArray();
 
-      creationDate = new Date(paymentDetails.getTime() * 1000);
       merchantPaymentDetails = getMerchantPaymentDetailsFromBytes(stroemMessageDataBytes);
       if (merchantPaymentDetails == null)
         throw new PaymentProtocolException("Invalid PaymentDetails");
@@ -219,35 +181,57 @@ public class StroemPaymentProtocolSession {
       if (params == null)
         throw new PaymentProtocolException.InvalidNetwork("Invalid currency " + merchantPaymentDetails.getCurrency());
 
-      totalValue = getTotalValue();
+      // ===================================
+      log.debug("Get common values from PaymentDetails");
+      creationDate = new Date(paymentDetails.getTime() * 1000);
+
+      // Get expires (getting it from the main PaymentDetails object)
+      if (paymentDetails.hasExpires())
+        expiryDate = new Date(paymentDetails.getExpires() * 1000L);
+      else
+        expiryDate = null;
+
+      // ===================================
+      log.debug("Get common values from MerchantPaymentDetails");
+
+      if (merchantPaymentDetails.hasDisplayText())
+        memo = merchantPaymentDetails.getDisplayText();
+      else
+        memo = null;
+
+      if (paymentDetails.hasPaymentUrl())
+        paymentUrl = paymentDetails.getPaymentUrl();
+      else
+        paymentUrl = null;
+
+      // Total amount
+      if (!merchantPaymentDetails.hasAmount()) {
+        new StroemPaymentProtocolException("There must be an amount to pay");
+      }
+
+      totalValue = Coin.valueOf(merchantPaymentDetails.getAmount());
+
+      // This won't ever happen in practice. It would only happen if the user provided outputs
+      // that are obviously invalid. Still, we don't want to silently overflow.
+      if (totalValue.compareTo(NetworkParameters.MAX_MONEY) > 0)
+        throw new PaymentProtocolException.InvalidOutputs("The outputs are way too big.");
+
+
+      // ===================================
+      // Intitialize the common values
+      init(totalValue,
+              creationDate,
+              expiryDate,
+              memo,
+              paymentUrl,
+              paymentDetails);
+
       log.debug("End parsing of payment request");
     } catch (InvalidProtocolBufferException e) {
       throw new PaymentProtocolException(e);
     } catch (IOException  e) {
       throw new PaymentProtocolException(e);
     }
-  }
-
-  /**
-   * Discussion: The name of the exception thrown here is not 100% correct,
-   * but reuse will hold down complexity.
-   *
-   * @return The amout to pay
-   * @throws PaymentProtocolException.InvalidOutputs
-   */
-  private Coin getTotalValue() throws PaymentProtocolException.InvalidOutputs {
-    if (!merchantPaymentDetails.hasAmount()) {
-      new StroemPaymentProtocolException("There must be an amount to pay");
-    }
-
-    Coin value = Coin.valueOf(merchantPaymentDetails.getAmount());
-
-    // This won't ever happen in practice. It would only happen if the user provided outputs
-    // that are obviously invalid. Still, we don't want to silently overflow.
-    if (value.compareTo(NetworkParameters.MAX_MONEY) > 0)
-      throw new PaymentProtocolException.InvalidOutputs("The outputs are way too big.");
-
-    return value;
   }
 
   /**
@@ -299,70 +283,53 @@ public class StroemPaymentProtocolSession {
     return params;
   }
 
-  /**
-   * Returns the protobuf that this object was instantiated with.
-   *
-   *  @return Note: this is NOT the same as Protos.PaymentRequest object
-   */
-  public StroemPpProtos.PaymentRequest getPaymentRequest() {
-    return paymentRequest;
-  }
 
+  // ========= Stroem specific methods ===========
   /**
    * Will transform the PaymentRequest so it will have the same type as the standard PaymentRequest
+   * NOTE: This is a temporary solution.
    *
    * @return The transformed Protos.PaymentRequest object
    */
   public Protos.PaymentRequest getPaymentRequestNormal() throws InvalidProtocolBufferException {
-    byte[] bytes = paymentRequest.toByteArray();
+    byte[] bytes = getPaymentRequest().toByteArray();
     ByteString byteString = ByteString.copyFrom(bytes);
     return Protos.PaymentRequest.parseFrom(byteString);
   }
 
-  /** Returns the protobuf that describes the payment to be made. */
+  /**
+   * @return MerchantPaymentDetails = the protobuf object for stroem specific data
+   */
   public StroemProtos.MerchantPaymentDetails getMerchantPaymentDetails() {
     return merchantPaymentDetails;
   }
 
-  public URI getMerchantUri() {
-    return merchantUri;
-  }
-
+  /**
+   * @return the raw binary of MerchantPaymentDetails.
+   */
   public byte[] getStroemMessageData() {
     return stroemMessageData.clone();
   }
 
   /**
-   * @return The top-level domain and second-level domain, ex; "strawpay.com"
+   * @return the URI we used for the inital contact with the merchant
+   */
+  public URI getMerchantUri() {
+    return merchantUri;
+  }
+
+  /**
+   * @return the top-level domain and second-level domain, ex; "strawpay.com"
    */
   public String getMerchantBaseDomainName() {
     return StroemUriUtil.getBaseDomainNameFromUri(merchantUri);
   }
 
+  /**
+   * @return the name of the issuer the consumer must use for this purchase
+   */
   public String getIssuerName() {
     return issuerName;
   }
-  
-  /**
-   * Returns the payment url where the Payment message should be sent.
-   * Returns null if no payment url was provided in the PaymentRequest.
-   */
-  @Nullable
-  public String getPaymentUrl() {
-      if (paymentDetails.hasPaymentUrl())
-          return paymentDetails.getPaymentUrl();
-      return null;
-  }
- 
-  /**
-   * Returns the merchant data included by the merchant in the payment request, or null if none.
-   */
-  @Nullable 
-  public byte[] getMerchantData() {
-      if (paymentDetails.hasMerchantData())
-          return paymentDetails.getMerchantData().toByteArray();
-      else
-          return null;
-  }
-  
+
 }

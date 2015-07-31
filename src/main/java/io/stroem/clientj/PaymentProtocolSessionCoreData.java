@@ -1,7 +1,8 @@
 package io.stroem.clientj;
 
-import io.stroem.paymentprotocol.StroemPpProtos;
 import org.bitcoinj.core.Coin;
+
+import org.bitcoin.protocols.payments.Protos;
 
 import javax.annotation.Nullable;
 import java.util.Date;
@@ -14,8 +15,7 @@ import java.util.Date;
  */
 public class PaymentProtocolSessionCoreData {
 
-    private StroemPpProtos.PaymentRequest paymentRequest;
-    private StroemPpProtos.PaymentDetails paymentDetails;
+    private Protos.PaymentRequest paymentRequest;
 
     private Coin totalValue;
     private Date creationDate;
@@ -23,14 +23,15 @@ public class PaymentProtocolSessionCoreData {
     private String memo;
     private String paymentUrl;
 
+    private byte[] merchantData;
 
-    public PaymentProtocolSessionCoreData(StroemPpProtos.PaymentRequest paymentRequest) {
+    public PaymentProtocolSessionCoreData(Protos.PaymentRequest paymentRequest) {
         this.paymentRequest = paymentRequest;
     }
 
-    public PaymentProtocolSessionCoreData(StroemPpProtos.PaymentRequest paymentRequest,
+    public PaymentProtocolSessionCoreData(Protos.PaymentRequest paymentRequest,
                                           Coin totalValue, Date creationDate, Date expiryDate, String memo, String paymentUrl,
-                                          StroemPpProtos.PaymentDetails paymentDetails) {
+                                          Protos.PaymentDetails paymentDetails, byte[] merchantData) {
 
         this.paymentRequest = paymentRequest;
         this.totalValue = totalValue;
@@ -38,18 +39,18 @@ public class PaymentProtocolSessionCoreData {
         this.expiryDate = expiryDate;
         this.memo = memo;
         this.paymentUrl = paymentUrl;
-        this.paymentDetails = paymentDetails;
+        this.merchantData = merchantData;
     }
 
     public void init( Coin totalValue, Date creationDate, Date expiryDate, String memo, String paymentUrl,
-                      StroemPpProtos.PaymentDetails paymentDetails) {
+                      Protos.PaymentDetails paymentDetails, byte[] merchantData) {
 
         this.totalValue = totalValue;
         this.creationDate = creationDate;
         this.expiryDate = expiryDate;
         this.memo = memo;
         this.paymentUrl = paymentUrl;
-        this.paymentDetails = paymentDetails;
+        this.merchantData = merchantData;
     }
 
 
@@ -58,7 +59,7 @@ public class PaymentProtocolSessionCoreData {
      *
      *  @return Note: this is NOT the same as Protos.PaymentRequest object, but will be after bitcoinj merge
      */
-    public StroemPpProtos.PaymentRequest getPaymentRequest() {
+    public Protos.PaymentRequest getPaymentRequest() {
         return paymentRequest;
     }
 
@@ -118,10 +119,7 @@ public class PaymentProtocolSessionCoreData {
      */
     @Nullable
     public byte[] getMerchantData() {
-        if (paymentDetails.hasMerchantData())
-            return paymentDetails.getMerchantData().toByteArray();
-        else
-            return null;
+        return merchantData;
     }
 
 }

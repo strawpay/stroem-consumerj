@@ -9,8 +9,6 @@ import io.stroem.api.Messages;
 import io.stroem.clientj.domain.*;
 import io.stroem.javaapi.JavaToScalaBridge;
 import io.stroem.proto.StroemProtos;
-import io.stroem.paymentprotocol.StroemPaymentProtocol;
-import io.stroem.paymentprotocol.StroemPpProtos;
 
 import org.bitcoin.protocols.payments.Protos;
 import org.bitcoinj.core.*;
@@ -48,6 +46,13 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
 
   private static final Logger log = LoggerFactory.getLogger(StroemPaymentProtocolSession.class);
 
+  public static final String MIMETYPE_PAYMENTREQUEST = "application/stroem-paymentrequest";
+  public static final String MIMETYPE_PAYMENT = "application/stroem-payment";
+  public static final String MIMETYPE_PAYMENTACK = "application/stroem-paymentack";
+
+  public static final String MEMO_STROEM_SIGNAL = "STROEM";
+  private boolean stroem = false;
+
   private static ListeningExecutorService executor = Threading.THREAD_POOL;
   private NetworkParameters params;
   private final TrustStoreLoader trustStoreLoader; // Not used as of now
@@ -67,10 +72,13 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
 
   /**
    * Returns a future that will be notified with a StroemPaymentProtocolSession object after it is fetched using the provided uri.
-   * uri is a BIP-72-style Stroem URI object that specifies where the {@link StroemPpProtos.PaymentRequest} object may
+   * uri is a BIP-72-style Stroem URI object that specifies where the {@link Protos.PaymentRequest} object may
    * be fetched, usually in the r= parameter.
    *
    * An exception is thrown by the future if the signature cannot be verified.
+   *
+   * Note: After the future has completed you must call isStroem() to verify that this really is a stroem message.
+   *       It is perfectly valid for the merchant to reject the issuer, and respond with a normal BIP70 PaymentDetail object.
    *
    * Note: PKI method cannot be specified yet.
    */
@@ -93,7 +101,7 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
         HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
         connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
         connection.setUseCaches(false);
-        StroemPpProtos.PaymentRequest paymentRequest = StroemPpProtos.PaymentRequest.parseFrom(connection.getInputStream());
+        Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.parseFrom(connection.getInputStream());
         log.debug("Merchant responded with a (Stroem) payment request ");
         return new StroemPaymentProtocolSession(paymentRequest, uri, issuerName);
       }
@@ -101,9 +109,11 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
   }
 
   /**
-   * Creates a StroemPaymentProtocolSession from the provided {@link StroemPpProtos.PaymentRequest}.
+   * Creates a StroemPaymentProtocolSession from the provided {@link Protos.PaymentRequest}.
+   *
+   * Note: You must call isStroem() on the instance to verify that this really is a stroem message.
    */
-  public StroemPaymentProtocolSession(StroemPpProtos.PaymentRequest request, URI merchantUri, String issuerName) throws PaymentProtocolException {
+  public StroemPaymentProtocolSession(Protos.PaymentRequest request, URI merchantUri, String issuerName) throws PaymentProtocolException {
     super(request);
     this.trustStoreLoader = new TrustStoreLoader.DefaultTrustStoreLoader();
     this.merchantUri = merchantUri;
@@ -124,7 +134,7 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
       public StroemPaymentReceipt call() throws Exception {
         URI uri = new URI(getPaymentUrl());
         HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
-        connection.setRequestProperty("Accept", StroemPaymentProtocol.MIMETYPE_PAYMENTACK);
+        connection.setRequestProperty("Accept", MIMETYPE_PAYMENTACK);
         connection.setUseCaches(false);
         // Get the stroem message first
         StroemProtos.StroemMessage stroemMessageReply = StroemProtos.StroemMessage.parseFrom(connection.getInputStream());
@@ -140,14 +150,9 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
 
   }
 
-  private void parsePaymentRequest(StroemPpProtos.PaymentRequest request) throws PaymentProtocolException {
-    Coin totalValue;
-    Date creationDate;
-    Date expiryDate;
-    String memo;
-    String paymentUrl;
+  private void parsePaymentRequest(Protos.PaymentRequest request) throws PaymentProtocolException {
 
-    StroemPpProtos.PaymentDetails paymentDetails;
+    Protos.PaymentDetails paymentDetails;
 
     try {
       if (request == null)
@@ -155,78 +160,23 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
       if (request.getPaymentDetailsVersion() != 1)
         throw new PaymentProtocolException.InvalidVersion("Version 1 required. Received version " + request.getPaymentDetailsVersion());
 
-      // ===================================
       log.debug("Begin parsing paymentRequest");
       // Get the merchant details from the request
       if (!request.hasSerializedPaymentDetails())
         throw new PaymentProtocolException("No PaymentDetails");
 
       ByteString paymentDetailsBytes = request.getSerializedPaymentDetails();
-      paymentDetails = StroemPpProtos.PaymentDetails.parseFrom(paymentDetailsBytes);
+      paymentDetails = Protos.PaymentDetails.parseFrom(paymentDetailsBytes);
 
-      ByteString stroemMessageDataBytes = null;
-      if(paymentDetails.hasStroemMessage()) {
-        stroemMessageDataBytes = paymentDetails.getStroemMessage();
+      // Check the memo field
+      if (paymentDetails.hasMemo() && MEMO_STROEM_SIGNAL.equals(paymentDetails.getMemo())) {
+        log.debug("this is a stroem message");
+        stroem = true;
+        parseStroemMessage(paymentDetails);
       } else {
-        throw new RuntimeException("At this point the payment details must have stroem message");
+        stroem = false;
+        log.debug("This was not a stroem message (since its MEMO field didn't say so)");
       }
-      stroemMessageData = stroemMessageDataBytes.toByteArray();
-
-      merchantPaymentDetails = getMerchantPaymentDetailsFromBytes(stroemMessageDataBytes);
-      if (merchantPaymentDetails == null)
-        throw new PaymentProtocolException("Invalid PaymentDetails");
-
-      // Get the params from the currency field
-      params = getParamsFromCurrency(merchantPaymentDetails);
-      if (params == null)
-        throw new PaymentProtocolException.InvalidNetwork("Invalid currency " + merchantPaymentDetails.getCurrency());
-
-      // ===================================
-      log.debug("Get common values from PaymentDetails");
-      creationDate = new Date(paymentDetails.getTime() * 1000);
-
-      // Get expires (getting it from the main PaymentDetails object)
-      if (paymentDetails.hasExpires())
-        expiryDate = new Date(paymentDetails.getExpires() * 1000L);
-      else
-        expiryDate = null;
-
-      // ===================================
-      log.debug("Get common values from MerchantPaymentDetails");
-
-      if (merchantPaymentDetails.hasDisplayText())
-        memo = merchantPaymentDetails.getDisplayText();
-      else
-        memo = null;
-
-      if (paymentDetails.hasPaymentUrl())
-        paymentUrl = paymentDetails.getPaymentUrl();
-      else
-        paymentUrl = null;
-
-      // Total amount
-      if (!merchantPaymentDetails.hasAmount()) {
-        new StroemPaymentProtocolException("There must be an amount to pay");
-      }
-
-      totalValue = Coin.valueOf(merchantPaymentDetails.getAmount());
-
-      // This won't ever happen in practice. It would only happen if the user provided outputs
-      // that are obviously invalid. Still, we don't want to silently overflow.
-      if (totalValue.compareTo(NetworkParameters.MAX_MONEY) > 0)
-        throw new PaymentProtocolException.InvalidOutputs("The outputs are way too big.");
-
-
-      // ===================================
-      // Intitialize the common values
-      init(totalValue,
-              creationDate,
-              expiryDate,
-              memo,
-              paymentUrl,
-              paymentDetails);
-
-      log.debug("End parsing of payment request");
     } catch (InvalidProtocolBufferException e) {
       throw new PaymentProtocolException(e);
     } catch (IOException  e) {
@@ -234,6 +184,105 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
     }
   }
 
+  private void parseStroemMessage(Protos.PaymentDetails paymentDetails) throws PaymentProtocolException, IOException {
+
+    Coin totalValue;
+    Date creationDate;
+    Date expiryDate;
+    String memo;
+    String paymentUrl;
+    byte[] merchantData;
+
+    ByteString stroemMessageDataBytes = null;
+    if (paymentDetails.hasMerchantData()) {
+      stroemMessageDataBytes = paymentDetails.getMerchantData();
+    } else {
+      throw new RuntimeException("At this point the payment details must have stroem message in merchant data");
+    }
+    stroemMessageData = stroemMessageDataBytes.toByteArray();
+    merchantData = stroemMessageData;
+
+    merchantPaymentDetails = getMerchantPaymentDetailsFromBytes(stroemMessageDataBytes);
+    if (merchantPaymentDetails == null)
+      throw new PaymentProtocolException("Invalid PaymentDetails");
+
+    // Get the params from the currency field
+    params = getParamsFromCurrency(merchantPaymentDetails);
+    if (params == null)
+      throw new PaymentProtocolException.InvalidNetwork("Invalid currency " + merchantPaymentDetails.getCurrency());
+
+    // ===================================
+    log.debug("Get common values from PaymentDetails");
+    creationDate = new Date(paymentDetails.getTime() * 1000);
+
+    // Get expires (getting it from the main PaymentDetails object)
+    if (paymentDetails.hasExpires())
+      expiryDate = new Date(paymentDetails.getExpires() * 1000L);
+    else
+      expiryDate = null;
+
+    // ===================================
+    log.debug("Get common values from MerchantPaymentDetails");
+
+    if (merchantPaymentDetails.hasDisplayText())
+      memo = merchantPaymentDetails.getDisplayText();
+    else
+      memo = null;
+
+    if (paymentDetails.hasPaymentUrl())
+      paymentUrl = paymentDetails.getPaymentUrl();
+    else
+      paymentUrl = null;
+
+    // Total amount
+    if (!merchantPaymentDetails.hasAmount()) {
+      new StroemPaymentProtocolException("There must be an amount to pay");
+    }
+
+    totalValue = Coin.valueOf(merchantPaymentDetails.getAmount());
+
+    // This won't ever happen in practice. It would only happen if the user provided outputs
+    // that are obviously invalid. Still, we don't want to silently overflow.
+    if (totalValue.compareTo(NetworkParameters.MAX_MONEY) > 0)
+      throw new PaymentProtocolException.InvalidOutputs("The outputs are way too big.");
+
+
+    // ===================================
+    // Intitialize the common values
+    init(totalValue,
+            creationDate,
+            expiryDate,
+            memo,
+            paymentUrl,
+            paymentDetails,
+            merchantData);
+
+    log.debug("End parsing of payment request");
+
+  }
+
+  /**
+   * @return True if this indeed is a stroem session. Should be checked on every new instance!
+   */
+  public boolean isStroem() {
+    return stroem;
+  }
+
+  /**
+   * Returns the value of pkiVerificationData or null if it wasn't verified at construction time.
+   */
+  @Nullable public PaymentProtocol.PkiVerificationData verifyPki() {
+    return pkiVerificationData;
+  }
+
+  /**
+   * Gets the params as read from the PaymentRequest.network field: main is the default if missing.
+   */
+  public NetworkParameters getNetworkParameters() {
+    return params;
+  }
+
+  // ========= Stroem specific methods ===========
   /**
    * For Stroem, network is stored in currency (testnet is seen as another currency/altcoin)
    *
@@ -273,42 +322,11 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData
     return JavaToScalaBridge.buildMerchantPaymentDetial(stroemDataBytes.toByteArray());
   }
 
-  /** Returns the value of pkiVerificationData or null if it wasn't verified at construction time. */
-  @Nullable public PaymentProtocol.PkiVerificationData verifyPki() {
-    return pkiVerificationData;
-  }
-
-  /** Gets the params as read from the PaymentRequest.network field: main is the default if missing. */
-  public NetworkParameters getNetworkParameters() {
-    return params;
-  }
-
-
-  // ========= Stroem specific methods ===========
-  /**
-   * Will transform the PaymentRequest so it will have the same type as the standard PaymentRequest
-   * NOTE: This is a temporary solution.
-   *
-   * @return The transformed Protos.PaymentRequest object
-   */
-  public Protos.PaymentRequest getPaymentRequestNormal() throws InvalidProtocolBufferException {
-    byte[] bytes = getPaymentRequest().toByteArray();
-    ByteString byteString = ByteString.copyFrom(bytes);
-    return Protos.PaymentRequest.parseFrom(byteString);
-  }
-
   /**
    * @return MerchantPaymentDetails = the protobuf object for stroem specific data
    */
   public StroemProtos.MerchantPaymentDetails getMerchantPaymentDetails() {
     return merchantPaymentDetails;
-  }
-
-  /**
-   * @return the raw binary of MerchantPaymentDetails.
-   */
-  public byte[] getStroemMessageData() {
-    return stroemMessageData.clone();
   }
 
   /**

@@ -13,7 +13,7 @@ import java.util.Date;
  *
  * (The aim is to move this class to bitcoinj and make {@link org.bitcoinj.protocols.payments.PaymentSession} extend it too)
  */
-public class PaymentProtocolSessionCoreData {
+public class PaymentProtocolSessionCore {
 
     private Protos.PaymentRequest paymentRequest;
 
@@ -25,13 +25,13 @@ public class PaymentProtocolSessionCoreData {
 
     private byte[] merchantData;
 
-    public PaymentProtocolSessionCoreData(Protos.PaymentRequest paymentRequest) {
+    public PaymentProtocolSessionCore(Protos.PaymentRequest paymentRequest) {
         this.paymentRequest = paymentRequest;
     }
 
-    public PaymentProtocolSessionCoreData(Protos.PaymentRequest paymentRequest,
-                                          Coin totalValue, Date creationDate, Date expiryDate, String memo, String paymentUrl,
-                                          Protos.PaymentDetails paymentDetails, byte[] merchantData) {
+    public PaymentProtocolSessionCore(Protos.PaymentRequest paymentRequest,
+                                      Coin totalValue, Date creationDate, Date expiryDate, String memo, String paymentUrl,
+                                      Protos.PaymentDetails paymentDetails, byte[] merchantData) {
 
         this.paymentRequest = paymentRequest;
         this.totalValue = totalValue;

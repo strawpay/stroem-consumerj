@@ -36,13 +36,13 @@ import java.util.concurrent.Callable;
  * (Stroem will not send a PAYMENT to the merchant, but a promissory note).
  * </p>
  *
- * <p>So, instead we extend {@link PaymentProtocolSessionCoreData}, representing the fields that
+ * <p>So, instead we extend {@link PaymentProtocolSessionCore}, representing the fields that
  * are common for both these classes.
  * (Hopefully, {@link org.bitcoinj.protocols.payments.PaymentSession} will use the same base class later on)
  * </p>
  *
  */
-public class StroemPaymentProtocolSession extends PaymentProtocolSessionCoreData {
+public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
 
   private static final Logger log = LoggerFactory.getLogger(StroemPaymentProtocolSession.class);
 

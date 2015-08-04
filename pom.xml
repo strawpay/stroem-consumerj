@@ -6,11 +6,11 @@
 
     <groupId>io.stroem</groupId>
     <artifactId>stroem-bitcoinjclient</artifactId>
-    <version>1.47.0-SNAPSHOT</version>
+    <version>1.47.1</version>
 
   <properties>
     <slf4j.version>1.7.6</slf4j.version>
-    <stroem.version>0.2.2-9-gb14e30f</stroem.version>
+    <stroem.version>0.2.2-11-g45b4bb5</stroem.version>
   </properties>
 
 

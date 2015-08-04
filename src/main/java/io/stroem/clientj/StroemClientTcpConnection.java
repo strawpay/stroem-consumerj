@@ -254,6 +254,7 @@ public class StroemClientTcpConnection {
       // This method is a bit messy, There might be a simpler way to figure out what error case should go where.
       @Override
       public void destroyConnection(PaymentChannelCloseException.CloseReason reason) {
+        log.debug("destroyConnection");
         if(channelOpenFuture.isDone()) {
           if (reason == PaymentChannelCloseException.CloseReason.CLIENT_REQUESTED_CLOSE) {
             if (settling) {
@@ -312,6 +313,7 @@ public class StroemClientTcpConnection {
       // The initStep field might change depending on the received message.
       @Override
       public void messageReceived(ProtobufParser<StroemMessage> handler, StroemMessage msg) {
+        log.debug("messageReceived - start");
         try {
           stroemStep = stroemMessageReceiver.receiveMessage(msg, stroemStep);
         } catch (WrongStroemServerVersionException e) {
@@ -334,6 +336,7 @@ public class StroemClientTcpConnection {
 
       @Override
       public void connectionOpen(ProtobufParser<StroemMessage> handler) {
+        log.debug("connectionOpen - start");
         if(stroemStep != StroemStep.START) {
           log.warn("When a TCP channel just opened the Stroem init step should not be " + stroemStep.name());
           stroemStep = StroemStep.START;
@@ -354,6 +357,7 @@ public class StroemClientTcpConnection {
 
       @Override
       public void connectionClosed(ProtobufParser<StroemMessage> handler) {
+        log.debug("connectionClosed - start");
         paymentChannelClient.connectionClosed();
         stroemStep = StroemStep.CONNECTION_CLOSED;
 

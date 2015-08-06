@@ -88,6 +88,7 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
     if (uri == null)
       throw new PaymentProtocolException.InvalidPaymentRequestURL("No payment request URL (r= parameter) in BitcoinURI " + stroemUri);
     try {
+      log.debug("Final Stroem Uri: " + uri);
       return fetchPaymentRequest(new URI(uri), stroemUri.getIssuerName());
     } catch (URISyntaxException e) {
       throw new PaymentProtocolException.InvalidPaymentRequestURL(e);

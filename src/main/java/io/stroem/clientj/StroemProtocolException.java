@@ -1,7 +1,7 @@
 package io.stroem.clientj;
 
 /**
- * An exception for Strom protocol errors
+ * An exception for Stroem protocol errors, in connection to the issuer
  */
 public class StroemProtocolException extends Exception {
   public static enum Code {

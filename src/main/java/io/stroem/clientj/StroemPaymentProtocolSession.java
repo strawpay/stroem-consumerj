@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.*;
 import java.util.Date;
 import java.util.concurrent.Callable;
@@ -45,6 +46,8 @@ import java.util.concurrent.Callable;
 public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
 
   private static final Logger log = LoggerFactory.getLogger(StroemPaymentProtocolSession.class);
+
+  public static final String ISSUER_NOT_ACCEPTED_CODE = "unknown issuer:";
 
   public static final String MIMETYPE_PAYMENTREQUEST = "application/stroem-paymentrequest";
   public static final String MIMETYPE_PAYMENT = "application/stroem-payment";
@@ -82,29 +85,52 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
    *
    * Note: PKI method cannot be specified yet.
    */
-  public static ListenableFuture<StroemPaymentProtocolSession> createFromStroemUri(final StroemUri stroemUri)
-      throws PaymentProtocolException {
-    String uri = stroemUri.getPaymentRequestUrl();
-    if (uri == null)
-      throw new PaymentProtocolException.InvalidPaymentRequestURL("No payment request URL (r= parameter) in BitcoinURI " + stroemUri);
-    try {
-      log.debug("Final Stroem Uri: " + uri);
-      return fetchPaymentRequest(new URI(uri), stroemUri.getIssuerName());
-    } catch (URISyntaxException e) {
-      throw new PaymentProtocolException.InvalidPaymentRequestURL(e);
-    }
+  public static ListenableFuture<StroemMerchantOffer> createFromStroemUri(final StroemUri stroemUri) {
+      return fetchPaymentRequest(stroemUri, stroemUri.getIssuerName());
   }
 
-  private static ListenableFuture<StroemPaymentProtocolSession> fetchPaymentRequest(final URI uri, final String issuerName) {
-    return executor.submit(new Callable<StroemPaymentProtocolSession>() {
+  private static ListenableFuture<StroemMerchantOffer> fetchPaymentRequest(final StroemUri stroemUri, final String issuerName)  {
+    return executor.submit(new Callable<StroemMerchantOffer>() {
       @Override
-      public StroemPaymentProtocolSession call() throws Exception {
-        HttpURLConnection connection = (HttpURLConnection)uri.toURL().openConnection();
+      public StroemMerchantOffer call() throws Exception {
+
+        String uriStr = null;
+        try {
+          uriStr = stroemUri.getPaymentRequestUrl();
+        } catch (IllegalArgumentException e) {
+          log.warn(e.getMessage());
+          return new StroemMerchantOffer(StroemMerchantOffer.StatusCode.INVALID_STROEM_URI, e.getMessage());
+        }
+
+        log.debug("Final Stroem Uri: " + uriStr);
+        URI uri = null;
+        try {
+          uri = new URI(uriStr);
+        } catch (URISyntaxException e) {
+          log.warn(e.getReason());
+          return new StroemMerchantOffer(StroemMerchantOffer.StatusCode.INVALID_URI, e.getReason());
+        }
+
+        HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
         connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
         connection.setUseCaches(false);
-        Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.parseFrom(connection.getInputStream());
-        log.debug("Merchant responded with a (Stroem) payment request ");
-        return new StroemPaymentProtocolSession(paymentRequest, uri, issuerName);
+
+        try {
+          Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.parseFrom(connection.getInputStream());
+          log.debug("Merchant responded with a (Stroem) payment request ");
+          return new StroemMerchantOffer(new StroemPaymentProtocolSession(paymentRequest, uri, issuerName));
+        } catch (IOException e) {
+          String str = connection.getErrorStream().toString();
+          if (str != null && str.startsWith(ISSUER_NOT_ACCEPTED_CODE)) {
+            String msg = "Merchant doesn't accept the given issuer: " + issuerName;
+            log.info(msg);
+            return new StroemMerchantOffer(StroemMerchantOffer.StatusCode.WRONG_ISSUER, msg);
+          } else {
+            String msg = "Cannot connect using this URL: " + uri + ". Due to: " + e.getMessage();
+            log.error(msg);
+            return new StroemMerchantOffer(StroemMerchantOffer.StatusCode.ERROR, msg);
+          }
+        }
       }
     });
   }

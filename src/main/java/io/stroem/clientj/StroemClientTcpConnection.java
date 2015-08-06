@@ -412,7 +412,7 @@ public class StroemClientTcpConnection {
   ) throws ValueOutOfRangeException, ExecutionException,  InterruptedException {
 
     log.debug("1. Begin incrementPayment.");
-    verifyStroemState();
+    //verifyStroemState();
     this.stroemStep = StroemStep.WAITING_FOR_PAYMENT_ACK;
 
     ECPoint myPublicKey = myTransactionKey.getPubKeyPoint();

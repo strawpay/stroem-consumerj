@@ -15,7 +15,6 @@ import io.stroem.javaapi.JavaToScalaBridge;
 
 import com.google.protobuf.ByteString;
 
-import org.bitcoin.paymentchannel.Protos;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
@@ -30,15 +29,15 @@ import org.spongycastle.crypto.params.KeyParameter;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * A simple utility class that runs the stroem protocol over a raw TCP socket using NIO, standalone.
+ * Runs the stroem protocol over a raw TCP socket using NIO, standalone.
+ * Used to connect to an Stroem Issuer to buy Promissory Notes over a payment channel.
  */
-public class StroemClientTcpConnection {
-  private static final org.slf4j.Logger log = LoggerFactory.getLogger(StroemClientTcpConnection.class);
+public class StroemIssuerConnection {
+  private static final org.slf4j.Logger log = LoggerFactory.getLogger(StroemIssuerConnection.class);
 
   public static final int STROEM_PORT = 4399;
   public static final int CLIENT_STROEM_VERSION = 1;
   public static final String CURRENCY = "BTC";
-  public static final long SAFE_MARGIN_SECONDS = 60*59; // 59 minutes time difference between the client and server clocks is allowed.
 
   private PaymentChannelClient paymentChannelClient;
 
@@ -48,7 +47,7 @@ public class StroemClientTcpConnection {
   private final ProtobufParser<StroemMessage> wireParser;
 
   // Holds the status of an initialization of the payment channel
-  private final SettableFuture<StroemClientTcpConnection> channelOpenFuture = SettableFuture.create();
+  private final SettableFuture<StroemIssuerConnection> channelOpenFuture = SettableFuture.create();
   // Holds the status of a settlement of the payment channel
   private SettableFuture<Void> settlementFuture = SettableFuture.create();
   // A general future used to detect errors
@@ -65,7 +64,6 @@ public class StroemClientTcpConnection {
   private String serverIdName;
   private ECKey myKey;
   private Coin maxValue;
-  private long paymentChannelTimeoutSeconds;
   @Nullable private KeyParameter userKeySetup;
 
   // Temporary (state) variables
@@ -80,7 +78,7 @@ public class StroemClientTcpConnection {
     currentFuture = settlementFuture = SettableFuture.create();
     if (paymentChannelClient == null) {
       // Have to connect first.
-      initializePayments();
+      throw new IllegalStateException("Cannot settle paymnet channel if channel doesn't have a PaymentChannelClient");
     }
     paymentChannelClient.settle();
   }
@@ -111,8 +109,8 @@ public class StroemClientTcpConnection {
    * @throws java.io.IOException if there's an issue using the network.
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
-  public StroemClientTcpConnection(StroemPaymentChannel stroemPaymentChannel, int socketTimeoutSeconds, Wallet wallet,
-                                   ECKey myKey, @Nullable KeyParameter userKeySetup
+  public StroemIssuerConnection(StroemPaymentChannel stroemPaymentChannel, int socketTimeoutSeconds, Wallet wallet,
+                                ECKey myKey, @Nullable KeyParameter userKeySetup
   ) throws IOException, ValueOutOfRangeException {
     this(stroemPaymentChannel.getIssuerHost(), socketTimeoutSeconds, stroemPaymentChannel.getTimeoutSeconds(),
         wallet, myKey, userKeySetup, stroemPaymentChannel.getMaxValue(), stroemPaymentChannel.getStroemId());
@@ -137,8 +135,8 @@ public class StroemClientTcpConnection {
    * @throws java.io.IOException if there's an issue using the network.
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
-  public StroemClientTcpConnection(StroemIdSimple stroemIdSimple, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
-                            ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
+  public StroemIssuerConnection(StroemIdSimple stroemIdSimple, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+                                ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
   ) throws IOException, ValueOutOfRangeException {
     this(stroemIdSimple.getIssuerUriHost(), socketTimeoutSeconds, paymentChannelTimeoutSeconds, wallet, myKey, userKeySetup, maxValue, stroemIdSimple);
   }
@@ -164,9 +162,9 @@ public class StroemClientTcpConnection {
    * @throws java.io.IOException if there's an issue using the network.
    * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
-  public StroemClientTcpConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
-                                   ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue, StroemId serverId
-      ) throws IOException, ValueOutOfRangeException {
+  public StroemIssuerConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+                                ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue, StroemId serverId
+  ) throws IOException, ValueOutOfRangeException {
 
     // Initiate some members
     this.wallet = wallet;
@@ -174,16 +172,19 @@ public class StroemClientTcpConnection {
     this.serverIdHash = serverId.getRealPaymentChannelServerId();
     this.myKey = myKey;
     this.maxValue = maxValue;
-    this.paymentChannelTimeoutSeconds = paymentChannelTimeoutSeconds;
     this.userKeySetup = userKeySetup;
 
     log.debug("1. Start to init TCP over NIO");
 
     // 1. Handles messages going out on the network (Java objects -> Stroem protobuf)
-    PaymentChannelClient.ClientConnection clientConnection = buildPaymentChannelClientConnection();
+    StroemPaymentChannelClientConnection stroemPaymentChannelClientConnection = new StroemPaymentChannelClientConnection(this, channelOpenFuture, settlementFuture, currentFuture,
+            paymentChannelTimeoutSeconds);
+
+    PaymentChannelClient.ClientConnection clientConnection = stroemPaymentChannelClientConnection;
     log.debug("2. client connection built");
 
     paymentChannelClient = new PaymentChannelClient(wallet, myKey, maxValue, serverIdHash, paymentChannelTimeoutSeconds, userKeySetup, clientConnection);
+    stroemPaymentChannelClientConnection.setPaymentChannelClient(paymentChannelClient);
     log.debug("3. payment client built");
 
     stroemMessageReceiver = new StroemMessageReceiver(paymentChannelClient);
@@ -197,6 +198,7 @@ public class StroemClientTcpConnection {
     log.debug("6. default instance built");
 
     wireParser = new ProtobufParser<StroemMessage>(stroemMessageListener, defaultInstance, Short.MAX_VALUE, socketTimeoutSeconds*1000);
+    stroemPaymentChannelClientConnection.setWireParser(wireParser);
 
     log.debug("Start NIO");
     InetSocketAddress inetSocketAddress = new InetSocketAddress(issuerHost, STROEM_PORT);
@@ -210,8 +212,7 @@ public class StroemClientTcpConnection {
    * Will set up a paymentChannelClient.
    *
    * @return A future that will be used to determine when the channel has been set up correctly
-   */
-  private SettableFuture<StroemClientTcpConnection> initializePayments() {
+  private SettableFuture<StroemIssuerConnection> initializePayments() {
 
     if (paymentChannelClient == null) {
 
@@ -228,79 +229,7 @@ public class StroemClientTcpConnection {
     }
     return channelOpenFuture;
   }
-
-  /*
-   * Returns a ClientConnection, which handles messages going out on the network.
    */
-  private PaymentChannelClient.ClientConnection buildPaymentChannelClientConnection() {
-    PaymentChannelClient.ClientConnection clientConnection = new PaymentChannelClient.ClientConnection()  {
-
-      // PaymentChannel protobuf objects need to be transformed to Stroem protobuf and sent via TCP.
-      @Override
-      public void sendToServer(Protos.TwoWayChannelMessage paymentMsg) {
-        log.debug("1. Sending Payment Channel message of type: " + paymentMsg.getType());
-        StroemProtos.PaymentChannelMessage stroemPaymentChannelMsg = StroemProtos.PaymentChannelMessage.newBuilder()
-            .setPaymentChannelMessage(paymentMsg.toByteString()).build();
-        log.debug("2. ");
-        StroemMessage msg = StroemMessage.newBuilder()
-            .setType(StroemMessage.MessageType.PAYMENTCHANNEL_MESSAGE)
-            .setPaymentChannelMessage(stroemPaymentChannelMsg)
-            .build();
-        log.debug("3. ");
-          wireParser.write(msg);
-        log.debug("4. Written to protobuf parser.");
-      }
-
-      // This method is a bit messy, There might be a simpler way to figure out what error case should go where.
-      @Override
-      public void destroyConnection(PaymentChannelCloseException.CloseReason reason) {
-        log.debug("destroyConnection");
-        if(channelOpenFuture.isDone()) {
-          if (reason == PaymentChannelCloseException.CloseReason.CLIENT_REQUESTED_CLOSE) {
-            if (settling) {
-              log.info("Payment channel settled successfully.");
-              settlementFuture.set(null);
-            } else {
-              throw new IllegalStateException("Client has not requested settle, but server says we have!");
-            }
-          } else {
-            log.warn("Payment channel terminating with reason {}", reason);
-            if (reason == PaymentChannelCloseException.CloseReason.SERVER_REQUESTED_TOO_MUCH_VALUE) {
-              settlementFuture.setException(new InsufficientMoneyException(paymentChannelClient.getMissing()));
-            } else {
-              currentFuture.setException(new PaymentChannelCloseException("Unexpected payment channel termination", reason));
-            }
-          }
-        } else {
-          channelOpenFuture.setException(new PaymentChannelCloseException("Unable to open payment channel for reason : " + reason, reason));
-        }
-        wireParser.closeConnection();
-      }
-
-      // This implementation only allows responses where the server agrees to the clients demands.
-      @Override
-      public boolean acceptExpireTime(long expireTime) {
-        long currentTimeMillis = System.currentTimeMillis();
-        long currentTimeSec = currentTimeMillis / 1000;
-        long expectedExpirySec = currentTimeSec + paymentChannelTimeoutSeconds;
-        long min = expectedExpirySec - SAFE_MARGIN_SECONDS;
-        long max = expectedExpirySec + SAFE_MARGIN_SECONDS;
-        log.debug("Expire time = " + expireTime + " must be greater than " + min + " and less than " + max);
-        return expireTime > min && expireTime < max;
-      }
-
-      @Override
-      public void channelOpen(boolean wasInitiated) {
-        log.info("Payment channel {}", wasInitiated ? "was initiated." : "found.");
-        stroemStep = StroemStep.CONNECTION_OPEN;
-        freshChannel = wasInitiated;
-        wireParser.setSocketTimeout(0); // We will set the timeout on the socket instead
-        channelOpenFuture.set(StroemClientTcpConnection.this);
-      }
-    };
-
-    return clientConnection;
-  }
 
   /*
    * (Stroem protobuf -> Java)
@@ -383,7 +312,7 @@ public class StroemClientTcpConnection {
    *
    * <p>After this future completes successfully, you may call incrementPayment().
    */
-  public ListenableFuture<StroemClientTcpConnection> getChannelOpenFuture() {
+  public ListenableFuture<StroemIssuerConnection> getChannelOpenFuture() {
     return channelOpenFuture;
   }
 
@@ -403,7 +332,7 @@ public class StroemClientTcpConnection {
    * @throws ExecutionException If the ack future is interrupted
    * @throws InterruptedException If the ack future is interrupted
    * @throws IllegalStateException If the channel has been closed or is not yet open
-   *                               (see {@link StroemClientTcpConnection#getChannelOpenFuture()} for the second)
+   *                               (see {@link StroemIssuerConnection#getChannelOpenFuture()} for the second)
 
    */
   public synchronized StroemNegotiator incrementPayment(
@@ -479,6 +408,18 @@ public class StroemClientTcpConnection {
       default:
         throw new IllegalStateException("Cannot make payments when the connection's state is: " + this.stroemStep);
     }
+  }
+
+  // Called from StroemPaymentChannelClientConnection
+  public void setConnectionOpen(boolean freshChannel) {
+    this.freshChannel = freshChannel;
+    stroemStep = StroemStep.CONNECTION_OPEN;
+    channelOpenFuture.set(StroemIssuerConnection.this);
+  }
+
+  // Called from StroemPaymentChannelClientConnection
+  public boolean isSetteling() {
+    return settling;
   }
 
   /**

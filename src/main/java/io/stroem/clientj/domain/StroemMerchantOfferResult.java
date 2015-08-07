@@ -7,7 +7,7 @@ import io.stroem.clientj.StroemPaymentProtocolSession;
  *
  * The reason for this wrapping is that it's hard to throw Exceptions when dealing with futures.
  */
-public class StroemMerchantOffer {
+public class StroemMerchantOfferResult {
 
     public static enum StatusCode {
         OK(1),                   // Protocol timeout occurred (one party hung).
@@ -35,13 +35,13 @@ public class StroemMerchantOffer {
     private final StroemPaymentProtocolSession stroemPaymentProtocolSession;
 
 
-    public StroemMerchantOffer(StroemPaymentProtocolSession stroemPaymentProtocolSession) {
+    public StroemMerchantOfferResult(StroemPaymentProtocolSession stroemPaymentProtocolSession) {
         this.stroemPaymentProtocolSession = stroemPaymentProtocolSession;
         this.statusCode = StatusCode.OK;
         this.errorMessage = null;
     }
 
-    public StroemMerchantOffer(StatusCode statusCode, String errorMessage) {
+    public StroemMerchantOfferResult(StatusCode statusCode, String errorMessage) {
         this.stroemPaymentProtocolSession = null;
         this.statusCode = statusCode;
         this.errorMessage = errorMessage;

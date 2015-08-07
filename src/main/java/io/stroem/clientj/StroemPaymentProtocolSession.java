@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.*;
 import java.util.Date;
 import java.util.concurrent.Callable;
@@ -85,21 +84,21 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
    *
    * Note: PKI method cannot be specified yet.
    */
-  public static ListenableFuture<StroemMerchantOffer> createFromStroemUri(final StroemUri stroemUri) {
+  public static ListenableFuture<StroemMerchantOfferResult> createFromStroemUri(final StroemUri stroemUri) {
       return fetchPaymentRequest(stroemUri, stroemUri.getIssuerName());
   }
 
-  private static ListenableFuture<StroemMerchantOffer> fetchPaymentRequest(final StroemUri stroemUri, final String issuerName)  {
-    return executor.submit(new Callable<StroemMerchantOffer>() {
+  private static ListenableFuture<StroemMerchantOfferResult> fetchPaymentRequest(final StroemUri stroemUri, final String issuerName)  {
+    return executor.submit(new Callable<StroemMerchantOfferResult>() {
       @Override
-      public StroemMerchantOffer call() throws Exception {
+      public StroemMerchantOfferResult call() throws Exception {
 
         String uriStr = null;
         try {
           uriStr = stroemUri.getPaymentRequestUrl();
         } catch (IllegalArgumentException e) {
           log.warn(e.getMessage());
-          return new StroemMerchantOffer(StroemMerchantOffer.StatusCode.INVALID_STROEM_URI, e.getMessage());
+          return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.INVALID_STROEM_URI, e.getMessage());
         }
 
         log.debug("Final Stroem Uri: " + uriStr);
@@ -108,7 +107,7 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
           uri = new URI(uriStr);
         } catch (URISyntaxException e) {
           log.warn(e.getReason());
-          return new StroemMerchantOffer(StroemMerchantOffer.StatusCode.INVALID_URI, e.getReason());
+          return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.INVALID_URI, e.getReason());
         }
 
         HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
@@ -118,17 +117,17 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
         try {
           Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.parseFrom(connection.getInputStream());
           log.debug("Merchant responded with a (Stroem) payment request ");
-          return new StroemMerchantOffer(new StroemPaymentProtocolSession(paymentRequest, uri, issuerName));
+          return new StroemMerchantOfferResult(new StroemPaymentProtocolSession(paymentRequest, uri, issuerName));
         } catch (IOException e) {
           String str = connection.getErrorStream().toString();
           if (str != null && str.startsWith(ISSUER_NOT_ACCEPTED_CODE)) {
             String msg = "Merchant doesn't accept the given issuer: " + issuerName;
             log.info(msg);
-            return new StroemMerchantOffer(StroemMerchantOffer.StatusCode.WRONG_ISSUER, msg);
+            return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.WRONG_ISSUER, msg);
           } else {
             String msg = "Cannot connect using this URL: " + uri + ". Due to: " + e.getMessage();
             log.error(msg);
-            return new StroemMerchantOffer(StroemMerchantOffer.StatusCode.ERROR, msg);
+            return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.ERROR, msg);
           }
         }
       }

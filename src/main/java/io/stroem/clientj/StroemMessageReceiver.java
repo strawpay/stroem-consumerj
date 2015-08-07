@@ -85,12 +85,12 @@ public class StroemMessageReceiver {
     log.debug("Received Stroem server version");
     if(step == StroemStep.WAITING_FOR_SERVER_STROM_VERSION) {
       int serverVersion = msg.getVersion();
-      if(serverVersion == StroemClientTcpConnection.CLIENT_STROEM_VERSION) {
+      if(serverVersion == StroemIssuerConnection.CLIENT_STROEM_VERSION) {
         paymentChannelClient.connectionOpen();
         issuerGivenEntity = new StroemEntity(msg.getEntity());
         return StroemStep.WAITING_FOR_PAYMENT_CHANNEL_INITIATE;
       } else {
-        throw new WrongStroemServerVersionException("Server version should be " + StroemClientTcpConnection.CLIENT_STROEM_VERSION + " but was " + serverVersion);
+        throw new WrongStroemServerVersionException("Server version should be " + StroemIssuerConnection.CLIENT_STROEM_VERSION + " but was " + serverVersion);
       }
     } else {
       throw new IllegalStateException("Can't get STROM_VERSION from server before client sent STROM_VERSION");

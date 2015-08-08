@@ -7,9 +7,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 import io.stroem.api.Messages;
 import io.stroem.consumerj.issuer.*;
-import io.stroem.consumerj.merchant.StroemMerchantOfferResult;
-import io.stroem.consumerj.merchant.StroemUri;
-import io.stroem.consumerj.merchant.StroemUriUtil;
+import io.stroem.consumerj.merchant.*;
 import io.stroem.javaapi.JavaToScalaBridge;
 import io.stroem.proto.StroemProtos;
 
@@ -26,12 +24,20 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.*;
 import java.util.Date;
 import java.util.concurrent.Callable;
 
 /**
- * <p>Represents a Stroem payment protocol session to the merchant server.</p>
+ * <p>Represents a Stroem payment protocol session to the merchant server. The two most important methods are:
+ * </p>
+ *
+ * <ol>
+ *     <li>createFromStroemUri() - Will connect to the merchant server and fetch an offer back.</li>
+ *     <li>sendPromissoryNoteToMerchant() - Will send the Note to the merchant and get a receipt back.</li>
+ * </ol>
  *
  * <p>This class corresponds to the {@link org.bitcoinj.protocols.payments.PaymentSession} class for
  * BIP70 payment protocol in bitcoinj, and the reason we don't extend
@@ -49,11 +55,9 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
 
   private static final Logger log = LoggerFactory.getLogger(StroemMerchantSession.class);
 
+
   public static final String ISSUER_NOT_ACCEPTED_CODE = "unknown issuer:";
 
-  public static final String MIMETYPE_PAYMENTREQUEST = "application/stroem-paymentrequest";
-  public static final String MIMETYPE_PAYMENT = "application/stroem-payment";
-  public static final String MIMETYPE_PAYMENTACK = "application/stroem-paymentack";
 
   public static final String MEMO_STROEM_SIGNAL = "STROEM";
   private boolean stroem = false;
@@ -95,52 +99,94 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
     return executor.submit(new Callable<StroemMerchantOfferResult>() {
       @Override
       public StroemMerchantOfferResult call() throws Exception {
-
-        String uriStr = null;
-        try {
-          uriStr = stroemUri.getPaymentRequestUrl();
-        } catch (IllegalArgumentException e) {
-          log.warn(e.getMessage());
-          return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.INVALID_STROEM_URI, e.getMessage());
-        }
-
-        log.debug("Final Stroem Uri: " + uriStr);
-        URI uri = null;
-        try {
-          uri = new URI(uriStr);
-        } catch (URISyntaxException e) {
-          log.warn(e.getReason());
-          return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.INVALID_URI, e.getReason());
-        }
-
-        HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
-        connection.setRequestProperty("Accept", PaymentProtocol.MIMETYPE_PAYMENTREQUEST);
-        connection.setUseCaches(false);
-
-        try {
-          Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.parseFrom(connection.getInputStream());
-          log.debug("Merchant responded with a (Stroem) payment request ");
-          return new StroemMerchantOfferResult(new StroemMerchantSession(paymentRequest, uri, issuerName));
-        } catch (IOException e) {
-          String str = connection.getErrorStream().toString();
-          if (str != null && str.startsWith(ISSUER_NOT_ACCEPTED_CODE)) {
-            String msg = "Merchant doesn't accept the given issuer: " + issuerName;
-            log.info(msg);
-            return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.WRONG_ISSUER, msg);
-          } else {
-            String msg = "Cannot connect using this URL: " + uri + ". Due to: " + e.getMessage();
-            log.error(msg);
-            return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.ERROR, msg);
-          }
-        }
+        return doGetOffer(stroemUri, issuerName);
       }
     });
+  }
+
+  private static StroemMerchantOfferResult doGetOffer(StroemUri stroemUri, String issuerName) {
+
+    String uriStr = null;
+    try {
+      uriStr = stroemUri.getPaymentRequestUrl();
+    } catch (IllegalArgumentException e) {
+      log.warn(e.getMessage());
+      return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.INVALID_STROEM_URI, e.getMessage());
+    }
+
+    log.debug("Final Stroem Uri: " + uriStr);
+    URI uri = null;
+    try {
+      uri = new URI(uriStr);
+    } catch (URISyntaxException e) {
+      log.warn(e.getReason(), e);
+      return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.INVALID_URI, e.getReason());
+    }
+
+    HttpURLConnection connection = null;
+    try {
+      connection = HttpConfigurator.buildHttpURLConnectionForGettingOffer(uri);
+    } catch (IOException e) {
+      log.error("ERROR: " + e.getMessage(), e);
+      HttpConfigurator.closeAll(connection);
+      return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.ERROR, e.getMessage());
+    }
+
+    int responseCode;
+    try {
+      connection.connect();
+      responseCode = connection.getResponseCode();
+    } catch (IOException e) {
+      log.warn("Error: Merchant server does not respond on the URI: " + e.getMessage(), e);
+      HttpConfigurator.closeAll(connection);
+      return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.MERCHANT_DOWN, e.getMessage());
+    }
+
+    if (responseCode == HttpURLConnection.HTTP_OK) {
+      InputStream is = null;
+      try {
+        Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.parseFrom(connection.getInputStream());
+        log.debug("Merchant responded with a (Stroem) payment request ");
+        return new StroemMerchantOfferResult(new StroemMerchantSession(paymentRequest, uri, issuerName));
+      } catch (PaymentProtocolException e) {
+        log.warn("Wrong Stroem verison: " + e.getMessage(), e);
+        return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.ERROR, e.getMessage());
+      } catch (InvalidProtocolBufferException e) {
+        log.warn("Error: protobuf incorrect formatted: " + e.getMessage(), e);
+        return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.ERROR, e.getMessage());
+      } catch (IOException e) {
+        log.error("ERROR: " + e.getMessage(), e);
+        return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.ERROR, e.getMessage());
+      } finally {
+        HttpConfigurator.closeAll(is, connection);
+      }
+    } else {
+      String str = connection.getErrorStream().toString();
+      if (str != null && str.startsWith(ISSUER_NOT_ACCEPTED_CODE)) {
+        String msg = "Merchant doesn't accept the given issuer: " + issuerName;
+        log.info(msg);
+        HttpConfigurator.closeAll(connection);
+        return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.WRONG_ISSUER, msg);
+      } else {
+        String responseMessage = "Unable to read server error message";
+        try {
+          responseMessage = connection.getResponseMessage();
+          log.info("Merchant server respond with http error {}: {}", responseCode, responseMessage);
+        } catch (IOException e) {
+          log.error("Could not parse response =" + e.getMessage(), e);
+        }
+        HttpConfigurator.closeAll(connection);
+        return new StroemMerchantOfferResult(StroemMerchantOfferResult.StatusCode.MERCHANT_RESPONDS_WITH_ERROR_CODE, responseCode + " - " + responseMessage);
+      }
+    }
   }
 
   /**
    * Creates a StroemMerchantSession from the provided {@link Protos.PaymentRequest}.
    *
    * Note: You must call isStroem() on the instance to verify that this really is a stroem message.
+   *
+   * @throws PaymentProtocolException - Thrown when something is wrong with the message content
    */
   public StroemMerchantSession(Protos.PaymentRequest request, URI merchantUri, String issuerName) throws PaymentProtocolException {
     super(request);
@@ -157,27 +203,84 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
    *
    * @param stroemMessage to send to the merchant
    */
-  public ListenableFuture<StroemPaymentReceipt> sendPromissoryNoteToMerchant(StroemProtos.StroemMessage stroemMessage) {
-    return executor.submit(new Callable<StroemPaymentReceipt>() {
+  public ListenableFuture<StroemMerchantReceiptResult> sendPromissoryNoteToMerchant(final StroemProtos.StroemMessage stroemMessage) {
+    return executor.submit(new Callable<StroemMerchantReceiptResult>() {
       @Override
-      public StroemPaymentReceipt call() throws Exception {
-        URI uri = new URI(getPaymentUrl());
-        HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
-        connection.setRequestProperty("Accept", MIMETYPE_PAYMENTACK);
-        connection.setUseCaches(false);
-        // Get the stroem message first
-        StroemProtos.StroemMessage stroemMessageReply = StroemProtos.StroemMessage.parseFrom(connection.getInputStream());
+      public StroemMerchantReceiptResult call() throws Exception {
+        return doSend(stroemMessage);
+      }
+    });
+  }
+
+  private StroemMerchantReceiptResult doSend(StroemProtos.StroemMessage stroemMessage) {
+
+    log.debug("Merchant payment Url: " + getPaymentUrl());
+    URI uri = null;
+    try {
+      uri = new URI(getPaymentUrl());
+    } catch (URISyntaxException e) {
+      log.warn(e.getReason(), e);
+      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.INVALID_URI, e.getReason());
+    }
+
+    HttpURLConnection connection = null;
+    try {
+      connection = (HttpURLConnection) HttpConfigurator.buildHttpURLConnectionForPostingTheNote(uri, stroemMessage);
+    } catch (IOException e) {
+      log.error("Bad http configuration =" + e.getMessage(), e);
+      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.ERROR, e.getMessage());
+    }
+
+    OutputStream os = null;
+    int responseCode;
+    try {
+      connection.connect();
+      os = connection.getOutputStream();
+      stroemMessage.writeTo(os);
+      os.flush();
+      responseCode = connection.getResponseCode();
+    } catch (IOException e) {
+      log.warn("Error: Merchant server does not respond on the URI: " + e.getMessage(), e);
+      HttpConfigurator.closeAll(os, null, connection);
+      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.MERCHANT_DOWN, e.getMessage());
+    }
+
+    InputStream is = null;
+    if (responseCode == HttpURLConnection.HTTP_OK) {
+      try {
+        is = connection.getInputStream();
+        final StroemProtos.StroemMessage stroemMessageReply = StroemProtos.StroemMessage.parseFrom(is);
+
         // Convert it to correct type
         io.stroem.api.PaymentReceipt paymentReceipt = Messages.parsePaymentReceipt(stroemMessageReply).get();
         // Cast it to Java
-        return new StroemPaymentReceipt(
-            new StroemPaymentHash(paymentReceipt.paymentHash().value()),
-            new Date(paymentReceipt.signedAt().getMillis()),
-            paymentReceipt.signature().toCanonicalised());
-      }
-    });
+        StroemPaymentReceipt stroemPaymentReceipt = new StroemPaymentReceipt(
+                new StroemPaymentHash(paymentReceipt.paymentHash().value()),
+                new Date(paymentReceipt.signedAt().getMillis()),
+                paymentReceipt.signature().toCanonicalised());
 
+        return new StroemMerchantReceiptResult(stroemPaymentReceipt);
+      } catch (IOException e) {
+        log.error("Could not parse response =" + e.getMessage(), e);
+        return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.ERROR, e.getMessage());
+      } finally {
+        HttpConfigurator.closeAll(os, is, connection);
+      }
+
+    } else {
+      String responseMessage = "Unable to read server error message";
+      try {
+        responseMessage = connection.getResponseMessage();
+        log.info("got http error {}: {}", responseCode, responseMessage);
+      } catch (IOException e) {
+        log.error("Could not parse response =" + e.getMessage(), e);
+      }
+      HttpConfigurator.closeAll(os, null, connection);
+      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.MERCHANT_RESPONDS_WITH_ERROR_CODE, responseCode + " - " + responseMessage);
+    }
   }
+
+
 
   private void parsePaymentRequest(Protos.PaymentRequest request) throws PaymentProtocolException {
 
@@ -208,7 +311,7 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
       }
     } catch (InvalidProtocolBufferException e) {
       throw new PaymentProtocolException(e);
-    } catch (IOException  e) {
+    } catch (IOException e) {
       throw new PaymentProtocolException(e);
     }
   }

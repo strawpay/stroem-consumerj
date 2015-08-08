@@ -1,22 +1,21 @@
 package io.stroem.consumerj.merchant;
 
 import io.stroem.consumerj.StroemMerchantSession;
+import io.stroem.consumerj.issuer.StroemPaymentReceipt;
 
 /**
- * Holds the PaymentRequest or an error, sent from the Merchant
+ * Holds the payment receipt or an error, sent from the Merchant
  *
  * The reason for this wrapping is that it's hard to throw Exceptions when dealing with futures.
  */
-public class StroemMerchantOfferResult {
+public class StroemMerchantReceiptResult {
 
     public static enum StatusCode {
         OK(1),                   // Protocol timeout occurred (one party hung).
-        WRONG_ISSUER(2),         // The issuer is not accepted
-        INVALID_URI(3),          // The URI given was not a real URI
-        INVALID_STROEM_URI(4),   // The URI given was not a correct Stroem URI
-        MERCHANT_DOWN(5),        // Merchant does not respond on the given URI
-        MERCHANT_RESPONDS_WITH_ERROR_CODE(6),
-        ERROR(7);                // General error
+        INVALID_URI(2),          // The URI given was not a real URI
+        MERCHANT_DOWN(3),        // No response on the URI
+        MERCHANT_RESPONDS_WITH_ERROR_CODE(4),
+        ERROR(5);                // General error
 
         int id;
         StatusCode(int id) {
@@ -34,17 +33,17 @@ public class StroemMerchantOfferResult {
     private final StatusCode statusCode;
     private final String errorMessage;
 
-    private final StroemMerchantSession stroemMerchantSession;
+    private final StroemPaymentReceipt stroemPaymentReceipt;
 
 
-    public StroemMerchantOfferResult(StroemMerchantSession stroemMerchantSession) {
-        this.stroemMerchantSession = stroemMerchantSession;
+    public StroemMerchantReceiptResult(StroemPaymentReceipt stroemPaymentReceipt) {
+        this.stroemPaymentReceipt = stroemPaymentReceipt;
         this.statusCode = StatusCode.OK;
         this.errorMessage = null;
     }
 
-    public StroemMerchantOfferResult(StatusCode statusCode, String errorMessage) {
-        this.stroemMerchantSession = null;
+    public StroemMerchantReceiptResult(StatusCode statusCode, String errorMessage) {
+        this.stroemPaymentReceipt = null;
         this.statusCode = statusCode;
         this.errorMessage = errorMessage;
     }
@@ -56,8 +55,8 @@ public class StroemMerchantOfferResult {
         return this.statusCode == StatusCode.OK;
     }
 
-    public StroemMerchantSession getStroemMerchantSession() {
-        return stroemMerchantSession;
+    public StroemPaymentReceipt getStroemPaymentReceipt() {
+        return stroemPaymentReceipt;
     }
 
     public StatusCode getStatusCode() {

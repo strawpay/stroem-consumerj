@@ -209,29 +209,6 @@ public class StroemIssuerConnection {
   }
 
   /*
-   * Will set up a paymentChannelClient.
-   *
-   * @return A future that will be used to determine when the channel has been set up correctly
-  private SettableFuture<StroemIssuerConnection> initializePayments() {
-
-    if (paymentChannelClient == null) {
-
-      log.info("Init payments with server id: " + serverIdName);
-
-      // Handles messages going out on the network.
-      PaymentChannelClient.ClientConnection clientConnection = buildPaymentChannelClientConnection();
-
-      paymentChannelClient = new PaymentChannelClient(wallet, myKey, maxValue, serverIdHash, clientConnection);
-
-    } else {
-      log.warn("Init payments was called with an already initiated payentChannelClient");
-      channelOpenFuture.set(this);
-    }
-    return channelOpenFuture;
-  }
-   */
-
-  /*
    * (Stroem protobuf -> Java)
    * Returns a Listener, which handles messages coming from the network, in this case StroemMessage (protobuf).
    *

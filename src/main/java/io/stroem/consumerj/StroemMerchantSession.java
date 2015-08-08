@@ -45,9 +45,9 @@ import java.util.concurrent.Callable;
  * </p>
  *
  */
-public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
+public class StroemMerchantSession extends PaymentProtocolSessionCore {
 
-  private static final Logger log = LoggerFactory.getLogger(StroemPaymentProtocolSession.class);
+  private static final Logger log = LoggerFactory.getLogger(StroemMerchantSession.class);
 
   public static final String ISSUER_NOT_ACCEPTED_CODE = "unknown issuer:";
 
@@ -76,7 +76,7 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
   @Nullable public final PaymentProtocol.PkiVerificationData pkiVerificationData;
 
   /**
-   * Returns a future that will be notified with a StroemPaymentProtocolSession object after it is fetched using the provided uri.
+   * Returns a future that will be notified with a StroemMerchantSession object after it is fetched using the provided uri.
    * uri is a BIP-72-style Stroem URI object that specifies where the {@link Protos.PaymentRequest} object may
    * be fetched, usually in the r= parameter.
    *
@@ -120,7 +120,7 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
         try {
           Protos.PaymentRequest paymentRequest = Protos.PaymentRequest.parseFrom(connection.getInputStream());
           log.debug("Merchant responded with a (Stroem) payment request ");
-          return new StroemMerchantOfferResult(new StroemPaymentProtocolSession(paymentRequest, uri, issuerName));
+          return new StroemMerchantOfferResult(new StroemMerchantSession(paymentRequest, uri, issuerName));
         } catch (IOException e) {
           String str = connection.getErrorStream().toString();
           if (str != null && str.startsWith(ISSUER_NOT_ACCEPTED_CODE)) {
@@ -138,11 +138,11 @@ public class StroemPaymentProtocolSession extends PaymentProtocolSessionCore {
   }
 
   /**
-   * Creates a StroemPaymentProtocolSession from the provided {@link Protos.PaymentRequest}.
+   * Creates a StroemMerchantSession from the provided {@link Protos.PaymentRequest}.
    *
    * Note: You must call isStroem() on the instance to verify that this really is a stroem message.
    */
-  public StroemPaymentProtocolSession(Protos.PaymentRequest request, URI merchantUri, String issuerName) throws PaymentProtocolException {
+  public StroemMerchantSession(Protos.PaymentRequest request, URI merchantUri, String issuerName) throws PaymentProtocolException {
     super(request);
     this.trustStoreLoader = new TrustStoreLoader.DefaultTrustStoreLoader();
     this.merchantUri = merchantUri;

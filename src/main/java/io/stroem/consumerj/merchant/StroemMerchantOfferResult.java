@@ -1,6 +1,6 @@
 package io.stroem.consumerj.merchant;
 
-import io.stroem.consumerj.StroemPaymentProtocolSession;
+import io.stroem.consumerj.StroemMerchantSession;
 
 /**
  * Holds the PaymentRequest or an error, sent from the Merchant
@@ -32,17 +32,17 @@ public class StroemMerchantOfferResult {
     private final StatusCode statusCode;
     private final String errorMessage;
 
-    private final StroemPaymentProtocolSession stroemPaymentProtocolSession;
+    private final StroemMerchantSession stroemMerchantSession;
 
 
-    public StroemMerchantOfferResult(StroemPaymentProtocolSession stroemPaymentProtocolSession) {
-        this.stroemPaymentProtocolSession = stroemPaymentProtocolSession;
+    public StroemMerchantOfferResult(StroemMerchantSession stroemMerchantSession) {
+        this.stroemMerchantSession = stroemMerchantSession;
         this.statusCode = StatusCode.OK;
         this.errorMessage = null;
     }
 
     public StroemMerchantOfferResult(StatusCode statusCode, String errorMessage) {
-        this.stroemPaymentProtocolSession = null;
+        this.stroemMerchantSession = null;
         this.statusCode = statusCode;
         this.errorMessage = errorMessage;
     }
@@ -54,8 +54,8 @@ public class StroemMerchantOfferResult {
         return this.statusCode == StatusCode.OK;
     }
 
-    public StroemPaymentProtocolSession getStroemPaymentProtocolSession() {
-        return stroemPaymentProtocolSession;
+    public StroemMerchantSession getStroemMerchantSession() {
+        return stroemMerchantSession;
     }
 
     public StatusCode getStatusCode() {

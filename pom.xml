@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.stroem</groupId>
-    <artifactId>stroem-bitcoinjclient</artifactId>
-    <version>1.47.6</version>
+    <artifactId>stroem-consumerj</artifactId>
+    <version>0.1.0</version>
 
   <properties>
     <slf4j.version>1.7.6</slf4j.version>

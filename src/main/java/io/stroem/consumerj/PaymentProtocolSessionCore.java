@@ -9,7 +9,7 @@ import java.util.Date;
 
 /**
  * These fields corresponds to the fields with the same name in
- * {@link org.bitcoinj.protocols.payments.PaymentSession} and {@link StroemPaymentProtocolSession}.
+ * {@link org.bitcoinj.protocols.payments.PaymentSession} and {@link StroemMerchantSession}.
  *
  * (The aim is to move this class to bitcoinj and make {@link org.bitcoinj.protocols.payments.PaymentSession} extend it too)
  */

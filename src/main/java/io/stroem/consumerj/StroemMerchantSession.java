@@ -242,7 +242,7 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
     } catch (IOException e) {
       log.warn("Error: Merchant server does not respond on the URI: " + e.getMessage(), e);
       HttpConfigurator.closeAll(os, null, connection);
-      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.MERCHANT_DOWN, e.getMessage());
+      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.PAYMENT_SERVER_DOWN, e.getMessage());
     }
 
     InputStream is = null;
@@ -276,7 +276,7 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
         log.error("Could not parse response =" + e.getMessage(), e);
       }
       HttpConfigurator.closeAll(os, null, connection);
-      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.MERCHANT_RESPONDS_WITH_ERROR_CODE, responseCode + " - " + responseMessage);
+      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.PAYMENT_SERVER_RESPONDS_WITH_ERROR_CODE, responseCode + " - " + responseMessage);
     }
   }
 

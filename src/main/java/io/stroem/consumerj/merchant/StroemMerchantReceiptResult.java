@@ -13,8 +13,8 @@ public class StroemMerchantReceiptResult {
     public static enum StatusCode {
         OK(1),                   // Protocol timeout occurred (one party hung).
         INVALID_URI(2),          // The URI given was not a real URI
-        MERCHANT_DOWN(3),        // No response on the URI
-        MERCHANT_RESPONDS_WITH_ERROR_CODE(4),
+        PAYMENT_SERVER_DOWN(3),  // No response on the URI
+        PAYMENT_SERVER_RESPONDS_WITH_ERROR_CODE(4),
         ERROR(5);                // General error
 
         int id;

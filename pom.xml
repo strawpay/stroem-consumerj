@@ -6,11 +6,11 @@
 
     <groupId>io.stroem</groupId>
     <artifactId>stroem-consumerj</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
 
   <properties>
     <slf4j.version>1.7.6</slf4j.version>
-    <stroem.version>0.2.2-11-g45b4bb5</stroem.version>
+    <stroem.version>0.2.2-12-g0c9845c</stroem.version>
   </properties>
 
 

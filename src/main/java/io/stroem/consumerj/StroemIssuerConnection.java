@@ -221,7 +221,7 @@ public class StroemIssuerConnection {
       public void messageReceived(ProtobufParser<StroemMessage> handler, StroemMessage msg) {
         log.debug("messageReceived - start");
         try {
-          stroemStep = stroemMessageReceiver.receiveMessage(msg, stroemStep);
+          setStroemStep(stroemMessageReceiver.receiveMessage(msg, stroemStep));
         } catch (WrongStroemServerVersionException e) {
           // This happens before the payment channel has begun INITIATE.
           log.warn("Incorrect server version: " + e.getMessage());
@@ -245,7 +245,7 @@ public class StroemIssuerConnection {
         log.debug("connectionOpen - start");
         if(stroemStep != StroemStep.START) {
           log.warn("When a TCP channel just opened the Stroem init step should not be " + stroemStep.name());
-          stroemStep = StroemStep.START;
+          setStroemStep(StroemStep.START);
         }
 
         // First thing to do is to send the Stroem Version
@@ -257,15 +257,15 @@ public class StroemIssuerConnection {
             .build();
         wireParser.write(msg);
 
-        stroemStep = StroemStep.WAITING_FOR_SERVER_STROM_VERSION;
-        // Now we will wait for the server response (see StroemMessageReceiver.receiveStroemVersion())
+        setStroemStep(StroemStep.WAITING_FOR_SERVER_STROM_VERSION);
+        // Now we will wait for the issuer's response (see StroemMessageReceiver.receiveStroemVersion())
       }
 
       @Override
       public void connectionClosed(ProtobufParser<StroemMessage> handler) {
         log.debug("connectionClosed - start");
         paymentChannelClient.connectionClosed();
-        stroemStep = StroemStep.CONNECTION_CLOSED;
+        setStroemStep(StroemStep.CONNECTION_CLOSED);
 
         if(!channelOpenFuture.isDone()) {
           // If this happens when the channel opens we need to mark this as an error.
@@ -294,7 +294,7 @@ public class StroemIssuerConnection {
   }
 
   /**
-   * Increments the total value which we pay the server.
+   * Increments the total value of the payment channel, which we pay the issuer.
    * A. This method will call the issuer and pay the issuer using the payment channel.
    * B. Then it will extract the payment info from the issuer's ack, and use it to prepare the negotiation.
    * C. A tailor made Negotiator object will be returned, and the wallet developer is supposed to use it for negotiation.
@@ -318,8 +318,8 @@ public class StroemIssuerConnection {
   ) throws ValueOutOfRangeException, ExecutionException,  InterruptedException {
 
     log.debug("1. Begin incrementPayment.");
-    //verifyStroemState();
-    this.stroemStep = StroemStep.WAITING_FOR_PAYMENT_ACK;
+    verifyStroemStateIsChannelOpen();
+    setStroemStep(StroemStep.WAITING_FOR_PAYMENT_ACK);
 
     ECPoint myPublicKey = myTransactionKey.getPubKeyPoint();
     JavaToScalaBridge.PromissoryNoteRequestReturnBundle returnBundle = JavaToScalaBridge.buildPromissoryNoteRequestProto(merchantPaymentDetailsBytes, myPublicKey);
@@ -336,7 +336,7 @@ public class StroemIssuerConnection {
 
     PaymentIncrementAck ack = ackFuture.get();
     log.debug("4. Ack received. ");
-    this.stroemStep = StroemStep.PAYMENT_DONE;
+    setStroemStep(StroemStep.PAYMENT_DONE);
 
     log.debug("5. Prepare for negotiation. ");
     ByteString infoByteString = ack.getInfo();
@@ -370,7 +370,7 @@ public class StroemIssuerConnection {
     }
   }
 
-  private void verifyStroemState() {
+  private void verifyStroemStateIsChannelOpen() {
     switch (this.stroemStep) {
       case CONNECTION_OPEN:
         log.debug("This is the first payment on this TCP session");
@@ -390,7 +390,7 @@ public class StroemIssuerConnection {
   // Called from StroemPaymentChannelClientConnection
   public void setConnectionOpen(boolean freshChannel) {
     this.freshChannel = freshChannel;
-    stroemStep = StroemStep.CONNECTION_OPEN;
+    setStroemStep(StroemStep.CONNECTION_OPEN);
     channelOpenFuture.set(StroemIssuerConnection.this);
   }
 
@@ -411,7 +411,7 @@ public class StroemIssuerConnection {
   }
 
   /**
-   * Closes the connection, notifying the server it should settle the channel by broadcasting the most recent payment
+   * Closes the connection, notifying the issuer it should settle the channel by broadcasting the most recent payment
    * transaction.
    */
   public void settle() {
@@ -430,8 +430,13 @@ public class StroemIssuerConnection {
     }
   }
 
+  private synchronized void setStroemStep(StroemStep ss) {
+    log.debug("-- setting old state " + this.stroemStep + " to " + ss);
+    this.stroemStep = ss;
+  }
+
   /**
-   * Disconnects the network connection but doesn't request the server to settle the channel first (literally just
+   * Disconnects the network connection but doesn't request the issuer to settle the channel first (literally just
    * unplugs the network socket and marks the stored channel state as inactive).
    */
   public void disconnectWithoutSettlement() {

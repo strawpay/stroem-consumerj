@@ -11,11 +11,11 @@ import io.stroem.consumerj.issuer.StroemPaymentReceipt;
 public class StroemMerchantReceiptResult {
 
     public static enum StatusCode {
-        OK(1),                   // Protocol timeout occurred (one party hung).
-        INVALID_URI(2),          // The URI given was not a real URI
-        PAYMENT_SERVER_DOWN(3),  // No response on the URI
+        OK(1),                         // Protocol timeout occurred (one party hung).
+        PAYMENT_SERVER_URI_INVALID(2), // The URI given was not a real URI
+        PAYMENT_SERVER_DOWN(3),        // No response on the URI
         PAYMENT_SERVER_RESPONDS_WITH_ERROR_CODE(4),
-        ERROR(5);                // General error
+        PAYMENT_SERVER_ERROR(5);      // General error
 
         int id;
         StatusCode(int id) {
@@ -26,7 +26,7 @@ public class StroemMerchantReceiptResult {
             for (StatusCode errorCode : StatusCode.values())
                 if (errorCode.id == id)
                     return errorCode;
-            return ERROR;
+            return PAYMENT_SERVER_ERROR;
         }
     }
 

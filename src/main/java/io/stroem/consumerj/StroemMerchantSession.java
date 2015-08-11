@@ -220,7 +220,7 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
       uri = new URI(getPaymentUrl());
     } catch (URISyntaxException e) {
       log.warn(e.getReason(), e);
-      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.INVALID_URI, e.getReason());
+      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.PAYMENT_SERVER_URI_INVALID, e.getReason());
     }
 
     HttpURLConnection connection = null;
@@ -228,7 +228,7 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
       connection = (HttpURLConnection) HttpConfigurator.buildHttpURLConnectionForPostingTheNote(uri, stroemMessage);
     } catch (IOException e) {
       log.error("Bad http configuration =" + e.getMessage(), e);
-      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.ERROR, e.getMessage());
+      return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.PAYMENT_SERVER_ERROR, e.getMessage());
     }
 
     OutputStream os = null;
@@ -262,7 +262,7 @@ public class StroemMerchantSession extends PaymentProtocolSessionCore {
         return new StroemMerchantReceiptResult(stroemPaymentReceipt);
       } catch (IOException e) {
         log.error("Could not parse response =" + e.getMessage(), e);
-        return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.ERROR, e.getMessage());
+        return new StroemMerchantReceiptResult(StroemMerchantReceiptResult.StatusCode.PAYMENT_SERVER_ERROR, e.getMessage());
       } finally {
         HttpConfigurator.closeAll(os, is, connection);
       }

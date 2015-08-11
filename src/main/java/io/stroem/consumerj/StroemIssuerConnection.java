@@ -221,7 +221,10 @@ public class StroemIssuerConnection {
       public void messageReceived(ProtobufParser<StroemMessage> handler, StroemMessage msg) {
         log.debug("messageReceived - start");
         try {
-          setStroemStep(stroemMessageReceiver.receiveMessage(msg, stroemStep));
+          StroemStep newStroemStep = stroemMessageReceiver.receiveMessage(msg, stroemStep);
+          if (newStroemStep != null) {
+            setStroemStep(newStroemStep);
+          }
         } catch (WrongStroemServerVersionException e) {
           // This happens before the payment channel has begun INITIATE.
           log.warn("Incorrect server version: " + e.getMessage());

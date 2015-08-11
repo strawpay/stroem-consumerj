@@ -43,18 +43,18 @@ public class StroemMessageReceiver {
       case PAYMENTCHANNEL_MESSAGE:
         checkState(msg.hasPaymentChannelMessage());
         readPaymentChannelMessage(msg.getPaymentChannelMessage());
-        return previousStep;
+        return null;
       case STROEM_SERVER_VERSION:
         checkState(msg.hasStroemServerVersion());
         return receiveStroemVersion(msg.getStroemServerVersion(), previousStep);
       case PROMISSORY_NOTE:
         checkState(msg.hasPromissoryNote());
         receivePromissoryNote(msg.getPromissoryNote());
-        return previousStep;
+        return null;
       case ERROR:
         checkState(msg.hasError());
         receiveError(msg.getError());
-        return previousStep;
+        return null;
       default:
         String errMsg = "Client got unknown Stroem message type " + msg.getType().name();
         log.error(errMsg);

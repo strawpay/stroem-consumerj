@@ -62,7 +62,7 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
     // PaymentChannel protobuf objects need to be transformed to Stroem protobuf and sent via TCP.
     @Override
     public void sendToServer(Protos.TwoWayChannelMessage paymentMsg) {
-        log.debug("callback - Sending Payment Channel message of type: " + paymentMsg.getType());
+        log.debug("callback - sendToServer - Sending Payment Channel message of type: " + paymentMsg.getType());
         StroemProtos.PaymentChannelMessage stroemPaymentChannelMsg = StroemProtos.PaymentChannelMessage.newBuilder()
                 .setPaymentChannelMessage(paymentMsg.toByteString()).build();
         StroemProtos.StroemMessage msg = StroemProtos.StroemMessage.newBuilder()
@@ -76,7 +76,7 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
     // This method is a bit messy, There might be a simpler way to figure out what error case should go where.
     @Override
     public void destroyConnection(PaymentChannelCloseException.CloseReason reason) {
-        log.debug("callback - destroyConnection");
+        log.debug("callback - destroyConnection - start");
         if(channelOpenFuture.isDone()) {
             if (reason == PaymentChannelCloseException.CloseReason.CLIENT_REQUESTED_CLOSE) {
                 if (stroemIssuerConnection.isSetteling()) {
@@ -102,7 +102,7 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
     // This implementation only allows responses where the server agrees to the clients demands.
     @Override
     public boolean acceptExpireTime(long expireTime) {
-        log.debug("callback - acceptExpireTime");
+        log.debug("callback - acceptExpireTime - start");
         long currentTimeMillis = System.currentTimeMillis();
         long currentTimeSec = currentTimeMillis / 1000;
         long expectedExpirySec = currentTimeSec + paymentChannelTimeoutSeconds;

@@ -217,7 +217,7 @@ public class StroemIssuerConnection {
       // The initStep field might change depending on the received message.
       @Override
       public void messageReceived(ProtobufParser<StroemMessage> handler, StroemMessage msg) {
-        log.debug("messageReceived - start");
+        log.debug("callback - messageReceived - start");
         try {
           StroemStep newStroemStep = stroemMessageReceiver.receiveMessage(msg, stroemStep);
           if (newStroemStep != null) {
@@ -245,7 +245,7 @@ public class StroemIssuerConnection {
 
       @Override
       public void connectionOpen(ProtobufParser<StroemMessage> handler) {
-        log.debug("connectionOpen - start");
+        log.debug("callback - connectionOpen - start");
         if(stroemStep != StroemStep.START) {
           log.warn("When a TCP channel just opened the Stroem init step should not be " + stroemStep.name());
           setStroemStep(StroemStep.START);
@@ -266,7 +266,7 @@ public class StroemIssuerConnection {
 
       @Override
       public void connectionClosed(ProtobufParser<StroemMessage> handler) {
-        log.debug("connectionClosed - start");
+        log.debug("callback - connectionClosed - start");
         paymentChannelClient.connectionClosed();
         setStroemStep(StroemStep.CONNECTION_CLOSED);
 

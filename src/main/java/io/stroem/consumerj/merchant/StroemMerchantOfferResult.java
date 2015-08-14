@@ -10,7 +10,7 @@ import io.stroem.consumerj.StroemMerchantSession;
 public class StroemMerchantOfferResult {
 
     public static enum StatusCode {
-        OK(1),                   // Protocol timeout occurred (one party hung).
+        OK(1),                   // All worked well
         WRONG_ISSUER(2),         // The issuer is not accepted
         INVALID_URI(3),          // The URI given was not a real URI
         INVALID_STROEM_URI(4),   // The URI given was not a correct Stroem URI

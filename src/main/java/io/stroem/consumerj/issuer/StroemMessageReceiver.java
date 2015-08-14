@@ -112,9 +112,7 @@ public class StroemMessageReceiver {
    */
   private void receiveError(StroemProtos.Error msg) throws StroemProtocolException {
     log.error("Server sent ERROR {} with explanation {}", msg.getCode().name(), msg.hasExplanation() ? msg.getExplanation() : "(none)");
-    StroemProtocolException.Code code;
-    code = StroemProtocolException.Code.fromId(msg.getCode().getNumber());
-    throw new StroemProtocolException(code, msg.getExplanation());
+    throw new StroemProtocolException(msg.getCode(), msg.getExplanation());
   }
 
 

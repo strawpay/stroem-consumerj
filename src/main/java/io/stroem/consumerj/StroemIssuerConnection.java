@@ -47,7 +47,7 @@ public class StroemIssuerConnection {
   private final ProtobufParser<StroemMessage> wireParser;
 
   // Holds the status of an initialization of the payment channel
-  private final SettableFuture<StroemIssuerConnection> channelOpenFuture = SettableFuture.create();
+  private final SettableFuture<StroemIssuerConnectionResult> channelOpenFuture = SettableFuture.create();
   // Holds the status of a settlement of the payment channel
   private SettableFuture<Void> settlementFuture = SettableFuture.create();
   // A general future used to detect errors
@@ -106,14 +106,12 @@ public class StroemIssuerConnection {
    * @param myKey A freshly generated keypair used for the multisig contract and refund output.
    * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    *
-   * @throws java.io.IOException if there's an issue using the network.
-   * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
   public StroemIssuerConnection(StroemPaymentChannel stroemPaymentChannel, int socketTimeoutSeconds, Wallet wallet,
                                 ECKey myKey, @Nullable KeyParameter userKeySetup
-  ) throws IOException, ValueOutOfRangeException {
+  )  {
     this(stroemPaymentChannel.getIssuerHost(), socketTimeoutSeconds, stroemPaymentChannel.getTimeoutSeconds(),
-        wallet, myKey, userKeySetup, stroemPaymentChannel.getMaxValue(), stroemPaymentChannel.getStroemId());
+            wallet, myKey, userKeySetup, stroemPaymentChannel.getMaxValue(), stroemPaymentChannel.getStroemId());
   }
 
   /**
@@ -132,12 +130,10 @@ public class StroemIssuerConnection {
    * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    * @param maxValue The maximum value this channel is allowed to request
    *
-   * @throws java.io.IOException if there's an issue using the network.
-   * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
   public StroemIssuerConnection(StroemIdSimple stroemIdSimple, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
                                 ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
-  ) throws IOException, ValueOutOfRangeException {
+  )  {
     this(stroemIdSimple.getIssuerUriHost(), socketTimeoutSeconds, paymentChannelTimeoutSeconds, wallet, myKey, userKeySetup, maxValue, stroemIdSimple);
   }
 
@@ -158,13 +154,10 @@ public class StroemIssuerConnection {
    * @param maxValue The maximum value this channel is allowed to request
    * @param serverId A unique ID which is used to attempt reopening of an existing channel.
    *
-   *
-   * @throws java.io.IOException if there's an issue using the network.
-   * @throws ValueOutOfRangeException if the balance of wallet is lower than maxValue.
    */
   public StroemIssuerConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
                                 ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue, StroemId serverId
-  ) throws IOException, ValueOutOfRangeException {
+  ) {
 
     // Initiate some members
     this.wallet = wallet;
@@ -176,7 +169,7 @@ public class StroemIssuerConnection {
 
     log.debug("1. Start to init TCP over NIO");
 
-    // 1. Handles messages going out on the network (Java objects -> Stroem protobuf)
+    // Handles messages going out on the network (Java objects -> Stroem protobuf)
     StroemPaymentChannelClientConnection stroemPaymentChannelClientConnection = new StroemPaymentChannelClientConnection(this, channelOpenFuture, settlementFuture, currentFuture,
             paymentChannelTimeoutSeconds);
 
@@ -190,7 +183,7 @@ public class StroemIssuerConnection {
     stroemMessageReceiver = new StroemMessageReceiver(paymentChannelClient);
     log.debug("4. stroem message receiver built");
 
-    // 2. This listener handles messages coming in from network (Stroem protobuf -> java objects)
+    // This listener handles messages coming in from network (Stroem protobuf -> java objects)
     ProtobufParser.Listener<StroemMessage> stroemMessageListener = buildStroemMessageListener();
     log.debug("5. stroem message listener built");
 
@@ -204,8 +197,13 @@ public class StroemIssuerConnection {
     InetSocketAddress inetSocketAddress = new InetSocketAddress(issuerHost, STROEM_PORT);
     // Initiate the outbound network connection. We don't need to keep this around. The wireParser object will handle
     // things from here on out.
-    new NioClient(inetSocketAddress, wireParser, socketTimeoutSeconds * 1000);
-    log.debug("Initation of TCP over NIO done");
+    try {
+      new NioClient(inetSocketAddress, wireParser, socketTimeoutSeconds * 1000);
+      log.debug("Initation of TCP over NIO done");
+    } catch (IOException e) {
+      // Actually this is a bug: IOException is never thrown here
+      throw new IllegalStateException("Now NioClient actually throws IOException (change this code)! Message: " + e.getMessage()); // This can't happen
+    }
   }
 
   /*
@@ -227,17 +225,19 @@ public class StroemIssuerConnection {
           }
         } catch (WrongStroemServerVersionException e) {
           // This happens before the payment channel has begun INITIATE.
-          log.warn("Incorrect server version: " + e.getMessage());
-          channelOpenFuture.setException(e);
+          String errorMsg = "Incorrect server version: " + e.getMessage();
+          log.warn(errorMsg);
+          channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.WRONG_ISSUER_STROEM_VERSION, errorMsg));
         } catch (InsufficientMoneyException e) {
           // We should only get this exception during INITIATE, so channelOpen wasn't called yet.
-          log.info("Insufficient money: " + e.getMessage());
-          channelOpenFuture.setException(e);
+          String errorMsg = "Cannot create a channel since we do not have the money: " + e.getMessage();
+          log.info(errorMsg);
+          channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.INSUFFICIENT_MONEY, errorMsg));
         } catch (StroemProtocolException e) {
-          // This could happen anytime,
+          // (This could happen anytime)
           log.error("A Stroem protocol error occurred: " + e.getCode().name());
-          if(channelOpenFuture.isDone()) {
-            channelOpenFuture.setException(e);
+          if(!channelOpenFuture.isDone()) {
+            channelOpenFuture.set(new StroemIssuerConnectionResult(e));
           }
           currentFuture.setException(e);
         }
@@ -272,8 +272,7 @@ public class StroemIssuerConnection {
 
         if(!channelOpenFuture.isDone()) {
           // If this happens when the channel opens we need to mark this as an error.
-          channelOpenFuture.setException(new PaymentChannelCloseException("The TCP socket died",
-              PaymentChannelCloseException.CloseReason.CONNECTION_CLOSED));
+          channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.TCP_SOCKET_CLOSED, "The TCP socket died"));
         }
       }
     };
@@ -292,7 +291,7 @@ public class StroemIssuerConnection {
    *
    * <p>After this future completes successfully, you may call incrementPayment().
    */
-  public ListenableFuture<StroemIssuerConnection> getChannelOpenFuture() {
+  public ListenableFuture<StroemIssuerConnectionResult> getChannelOpenFuture() {
     return channelOpenFuture;
   }
 
@@ -394,7 +393,8 @@ public class StroemIssuerConnection {
   public void setConnectionOpen(boolean freshChannel) {
     this.freshChannel = freshChannel;
     setStroemStep(StroemStep.CONNECTION_OPEN);
-    channelOpenFuture.set(StroemIssuerConnection.this);
+    StroemIssuerConnectionResult result = new StroemIssuerConnectionResult(StroemIssuerConnection.this);
+    channelOpenFuture.set(result);
   }
 
   // Called from StroemPaymentChannelClientConnection

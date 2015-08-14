@@ -32,13 +32,13 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
     private long paymentChannelTimeoutSeconds;
 
     // Futures
-    private final SettableFuture<StroemIssuerConnection> channelOpenFuture;
+    private final SettableFuture<StroemIssuerConnectionResult> channelOpenFuture;
     private final SettableFuture<Void> settlementFuture;
     private final SettableFuture<Void> currentFuture;
 
 
     public StroemPaymentChannelClientConnection(StroemIssuerConnection stroemIssuerConnection,
-                                                SettableFuture<StroemIssuerConnection> channelOpenFuture,
+                                                SettableFuture<StroemIssuerConnectionResult> channelOpenFuture,
                                                 SettableFuture<Void> settlementFuture,
                                                 SettableFuture<Void> currentFuture,
                                                 long paymentChannelTimeoutSeconds

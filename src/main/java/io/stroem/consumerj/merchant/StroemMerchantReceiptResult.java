@@ -11,7 +11,7 @@ import io.stroem.consumerj.issuer.StroemPaymentReceipt;
 public class StroemMerchantReceiptResult {
 
     public static enum StatusCode {
-        OK(1),                         // Protocol timeout occurred (one party hung).
+        OK(1),                         // All worked well
         PAYMENT_SERVER_URI_INVALID(2), // The URI given was not a real URI
         PAYMENT_SERVER_DOWN(3),        // No response on the URI
         PAYMENT_SERVER_RESPONDS_WITH_ERROR_CODE(4),

@@ -61,9 +61,9 @@ public class StroemIssuerConnection {
   // Some intermediate member values (coming from the constructor)
   private final Wallet wallet;
   private Sha256Hash serverIdHash;
-  private String serverIdName;
   private ECKey myKey;
   private Coin maxValue;
+  @Nullable private StroemPaymentChannelConfiguration channelConfiguration;
   @Nullable private KeyParameter userKeySetup;
 
   // Temporary (state) variables
@@ -93,12 +93,15 @@ public class StroemIssuerConnection {
 
 
   /**
-   * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
+   * Attempts to:
+   * 1. open a new connection to an open a payment channel over the Stroem protocol (using the given serverId), or
+   * 2. create a new Stroem payment channel.
+   *
    * Blocking until the connection is open.
    *
-   * Use this constructor if you are building a normal wallet
+   * Use this constructor if you are building a normal wallet (this is the recommended constructor)
    *
-   * @param stroemPaymentChannel Meta data for the channel
+   * @param configuration Meta data for the channel.
    * @param socketTimeoutSeconds The connection timeout and read timeout during initialization. This should be large enough
    *                       to accommodate ECDSA signature operations and network latency.
    * @param wallet The wallet which will be paid from, and where completed transactions will be committed.
@@ -107,15 +110,19 @@ public class StroemIssuerConnection {
    * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    *
    */
-  public StroemIssuerConnection(StroemPaymentChannel stroemPaymentChannel, int socketTimeoutSeconds, Wallet wallet,
+  public StroemIssuerConnection(StroemPaymentChannelConfiguration configuration, int socketTimeoutSeconds, Wallet wallet,
                                 ECKey myKey, @Nullable KeyParameter userKeySetup
   )  {
-    this(stroemPaymentChannel.getIssuerHost(), socketTimeoutSeconds, stroemPaymentChannel.getTimeoutSeconds(),
-            wallet, myKey, userKeySetup, stroemPaymentChannel.getMaxValue(), stroemPaymentChannel.getStroemId());
+    this(configuration.getIssuerHost(), configuration.getStroemId(), socketTimeoutSeconds, configuration.getTimeoutSeconds(),
+            wallet, myKey, userKeySetup, configuration.getMaxValue());
+    this.channelConfiguration = configuration;
   }
 
   /**
-   * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
+   * Attempts to:
+   * 1. open a new connection to an open a payment channel over the Stroem protocol (using the given serverId), or
+   * 2. create a new Stroem payment channel.
+   *
    * Blocking until the connection is open.
    *
    * Use this constructor if you are building a normal wallet
@@ -134,16 +141,20 @@ public class StroemIssuerConnection {
   public StroemIssuerConnection(StroemIdSimple stroemIdSimple, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
                                 ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
   )  {
-    this(stroemIdSimple.getIssuerUriHost(), socketTimeoutSeconds, paymentChannelTimeoutSeconds, wallet, myKey, userKeySetup, maxValue, stroemIdSimple);
+    this(stroemIdSimple.getIssuerUriHost(), stroemIdSimple, socketTimeoutSeconds, paymentChannelTimeoutSeconds, wallet, myKey, userKeySetup, maxValue);
   }
 
   /**
-   * Attempts to open a new connection to and open a payment channel over the Stroem protocol, using the given serverId.
+   * Attempts to:
+   * 1. open a new connection to an open a payment channel over the Stroem protocol (using the given serverId), or
+   * 2. create a new Stroem payment channel.
+   *
    * Blocking until the connection is open.
    *
    * Use this constructor if you have need of the "serverId" param.
    *
    * @param issuerHost The host where the issuer server is listening.
+   * @param serverId A unique ID which is used to attempt reopening of an existing channel.
    * @param socketTimeoutSeconds The connection timeout and read timeout during initialization. This should be large enough
    *                       to accommodate ECDSA signature operations and network latency.
    * @param paymentChannelTimeoutSeconds How long the payment channel should stay open. Server not care about this value.
@@ -152,16 +163,14 @@ public class StroemIssuerConnection {
    * @param myKey A freshly generated keypair used for the multisig contract and refund output.
    * @param userKeySetup Key derived from a user password, used to decrypt myKey, if it is encrypted, during setup.
    * @param maxValue The maximum value this channel is allowed to request
-   * @param serverId A unique ID which is used to attempt reopening of an existing channel.
    *
    */
-  public StroemIssuerConnection(String issuerHost, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
-                                ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue, StroemId serverId
+  public StroemIssuerConnection(String issuerHost, StroemId serverId, int socketTimeoutSeconds, long paymentChannelTimeoutSeconds, Wallet wallet,
+                                ECKey myKey, @Nullable KeyParameter userKeySetup, Coin maxValue
   ) {
 
     // Initiate some members
     this.wallet = wallet;
-    this.serverIdName = serverId.getServerId();
     this.serverIdHash = serverId.getRealPaymentChannelServerId();
     this.myKey = myKey;
     this.maxValue = maxValue;
@@ -436,6 +445,16 @@ public class StroemIssuerConnection {
   private synchronized void setStroemStep(StroemStep ss) {
     log.debug("-- setting old state " + this.stroemStep + " to " + ss);
     this.stroemStep = ss;
+  }
+
+  /**
+   * Use this method if you plan to store the StroemPaymentChannelConfiguration somewhere.
+   *
+   * @return the StroemPaymentChannelConfiguration used during creation, if present.
+   */
+  @Nullable
+  public StroemPaymentChannelConfiguration getStroemPaymentChannelConfiguration() {
+    return channelConfiguration;
   }
 
   /**

@@ -2,7 +2,7 @@ package io.stroem.consumerj.persistence;
 
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
-import io.stroem.consumerj.issuer.StroemPaymentChannel;
+import io.stroem.consumerj.issuer.StroemPaymentChannelComplete;
 import io.stroem.consumerj.issuer.StroemPaymentChannels;
 import io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos;
 import org.bitcoinj.core.Coin;
@@ -34,7 +34,7 @@ public class StroemPaymentChannelRepository {
    *
    * @throws StroemPaymentChannelsLoadException thrown in various error conditions (see description).
    */
-  public StroemPaymentChannels readPaymentChannels(InputStream input) throws StroemPaymentChannelsLoadException {
+  public static StroemPaymentChannels readPaymentChannels(InputStream input) throws StroemPaymentChannelsLoadException {
     try {
       StroemPCWrapperProtos.StroemPaymentChannelProtos protos = parseToProto(input);
       return new StroemPaymentChannels(protos);
@@ -54,7 +54,7 @@ public class StroemPaymentChannelRepository {
   /**
    * Formats the given PaymentChannels to the given output stream in protocol buffer format.
    */
-  public void writePaymentChannels(StroemPaymentChannels stroemPaymentChannels, OutputStream output) throws IOException {
+  public static void writePaymentChannels(StroemPaymentChannels stroemPaymentChannels, OutputStream output) throws IOException {
     StroemPCWrapperProtos.StroemPaymentChannelProtos paymentChannelsProtos = paymentChannelsToProto(stroemPaymentChannels);
     paymentChannelsProtos.writeTo(output);
   }
@@ -63,30 +63,34 @@ public class StroemPaymentChannelRepository {
    * Converts the given paymentChannelInfos to the object representation of the protocol buffers. This can be modified, or
    * additional data fields set, before serialization takes place.
    */
-  public StroemPCWrapperProtos.StroemPaymentChannelProtos paymentChannelsToProto(StroemPaymentChannels stroemPaymentChannels) {
+  public static StroemPCWrapperProtos.StroemPaymentChannelProtos paymentChannelsToProto(StroemPaymentChannels stroemPaymentChannels) {
     StroemPCWrapperProtos.StroemPaymentChannelProtos.Builder builder = StroemPCWrapperProtos.StroemPaymentChannelProtos.newBuilder();
 
     Preconditions.checkNotNull(stroemPaymentChannels, "StroemPaymentChannels must be specified");
 
-    for (StroemPaymentChannel channel : stroemPaymentChannels.getAllStroemPaymentChannels()) {
+    for (StroemPaymentChannelComplete channel : stroemPaymentChannels.getAllStroemPaymentChannels()) {
       StroemPCWrapperProtos.StroemPaymentChannelProto paymentChannelInfoProto = makeStroemPaymentChannelProto(channel);
       builder.addStroemPaymentChannel(paymentChannelInfoProto);
     }
 
-    StroemPaymentChannel preferred = stroemPaymentChannels.getPreferredStroemPaymentChannel();
-    builder.setPreferredChannel(makePreferredStroemPaymentChannelProto(preferred.getHash(), preferred.getIssuerName()));
+    StroemPaymentChannelComplete preferred = stroemPaymentChannels.getPreferredStroemPaymentChannel();
+    if (preferred != null) {
+      builder.setPreferredChannel(makePreferredStroemPaymentChannelProto(preferred.getHash(), preferred.getIssuerName()));
+    } else {
+      // TODO This should at least be logged, since it is not correct
+    }
 
     return builder.build();
   }
 
-  private StroemPCWrapperProtos.PreferredStroemPaymentChannelProto makePreferredStroemPaymentChannelProto(String hash, String issuerName) {
+  private static StroemPCWrapperProtos.PreferredStroemPaymentChannelProto makePreferredStroemPaymentChannelProto(String hash, String issuerName) {
     StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.Builder builder = StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.newBuilder();
     builder.setHash(hash);
     builder.setIssuerName(issuerName);
     return builder.build();
   }
 
-  private StroemPCWrapperProtos.StroemPaymentChannelProto makeStroemPaymentChannelProto(StroemPaymentChannel channel) {
+  private static StroemPCWrapperProtos.StroemPaymentChannelProto makeStroemPaymentChannelProto(StroemPaymentChannelComplete channel) {
     StroemPCWrapperProtos.StroemPaymentChannelProto.Builder builder = StroemPCWrapperProtos.StroemPaymentChannelProto.newBuilder();
 
     // ------- Required fields -----

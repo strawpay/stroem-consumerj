@@ -1,8 +1,12 @@
 /*
  * This protobuf defines extra data that is stored with payment channels used by Stroem
  * (This is in addition to that stored in the wallet protobuf, which is 'owned' by bitcoinj)
- * It should be possible for a wallet developer to use this storage mechanism,
  *
+ * It should be possible for a wallet developer to convert the Stroem channel data to bytes
+ * using these proto classes, and store it as an extension in the wallet.
+ * See MultiBitHD source code for an example of this.
+ *
+ * NOTE: miner_fee is important since bitcoinj cannot figure this out from the tx yet.
  */
 
 /* Notes:
@@ -17,7 +21,7 @@ option java_outer_classname = "StroemPCWrapperProtos";
  * (some of this data is also possible to retrieve from the bitcoinj funding transaction)
  *
  * This message holds the creation parameters of the channel, not much mutable state.
- * For example, StroemPaymentChannel will not know if the channel is closed or the amount consumed.
+ * For example, StroemPaymentChannelComplete will not know if the channel is closed or the amount consumed.
  *
  * Note: You can use this data to open a new channel, identical to the first, when the original has been closed,
  * with the exception of fiat_max_value (will change with the currency volatility).

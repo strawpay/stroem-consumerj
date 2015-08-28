@@ -13,7 +13,7 @@
  * - To regenerate after editing, run ...
  */
 
-option java_package = "io.stroem.clientj.persistence.proto";
+option java_package = "io.stroem.consumerj.persistence.proto";
 option java_outer_classname = "StroemPCWrapperProtos";
 
 /*
@@ -45,6 +45,7 @@ message StroemPaymentChannelProto {
                                                     // Used if you want to record this amount for accounting.
     optional string fiat_currency = 10;             // The name of the fiat currence of "fiat_max_value"
     optional string note = 11;                      // A note can be added when the payment channel is created
+    optional int64 creation_time = 12;              // The number of milliseconds since 1970-01-01
 }
 
 /*

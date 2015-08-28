@@ -6,7 +6,7 @@
 
     <groupId>io.stroem</groupId>
     <artifactId>stroem-consumerj</artifactId>
-    <version>0.1.9</version>
+    <version>0.1.11</version>
 
   <properties>
     <slf4j.version>1.7.6</slf4j.version>
@@ -40,8 +40,6 @@
 
   <repositories>
 
-    <!-- Define the MultiBit staging repository for snapshots
-    GitHub requires mixture of raw text and blob for POMs and JARs -->
     <repository>
       <id>mbhd-maven-release-raw-text</id>
       <url>https://raw.githubusercontent.com/bitcoin-solutions/mbhd-maven/master/releases</url>

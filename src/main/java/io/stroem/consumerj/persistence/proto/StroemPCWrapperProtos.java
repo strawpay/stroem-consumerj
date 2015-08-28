@@ -8,10 +8,10 @@ public final class StroemPCWrapperProtos {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
-  public interface StroemPaymentChannelProtoOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+  public interface StroemPaymentChannelProtoOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:StroemPaymentChannelProto)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required string hash = 1;
     /**
      * <code>required string hash = 1;</code>
      *
@@ -38,7 +38,6 @@ public final class StroemPCWrapperProtos {
     com.google.protobuf.ByteString
         getHashBytes();
 
-    // required string issuer_uri = 2;
     /**
      * <code>required string issuer_uri = 2;</code>
      *
@@ -68,7 +67,6 @@ public final class StroemPCWrapperProtos {
     com.google.protobuf.ByteString
         getIssuerUriBytes();
 
-    // required string issuer_name = 3;
     /**
      * <code>required string issuer_name = 3;</code>
      *
@@ -95,7 +93,6 @@ public final class StroemPCWrapperProtos {
     com.google.protobuf.ByteString
         getIssuerNameBytes();
 
-    // required int64 max_value = 4;
     /**
      * <code>required int64 max_value = 4;</code>
      *
@@ -113,27 +110,8 @@ public final class StroemPCWrapperProtos {
      */
     long getMaxValue();
 
-    // required int64 miner_fee = 5;
     /**
-     * <code>required int64 miner_fee = 5;</code>
-     *
-     * <pre>
-     * The miner fee (in satoshi).
-     * </pre>
-     */
-    boolean hasMinerFee();
-    /**
-     * <code>required int64 miner_fee = 5;</code>
-     *
-     * <pre>
-     * The miner fee (in satoshi).
-     * </pre>
-     */
-    long getMinerFee();
-
-    // required int64 timeout_seconds = 6;
-    /**
-     * <code>required int64 timeout_seconds = 6;</code>
+     * <code>required int64 timeout_seconds = 5;</code>
      *
      * <pre>
      * The duration of the payment channel, in seconds
@@ -141,7 +119,7 @@ public final class StroemPCWrapperProtos {
      */
     boolean hasTimeoutSeconds();
     /**
-     * <code>required int64 timeout_seconds = 6;</code>
+     * <code>required int64 timeout_seconds = 5;</code>
      *
      * <pre>
      * The duration of the payment channel, in seconds
@@ -149,9 +127,8 @@ public final class StroemPCWrapperProtos {
      */
     long getTimeoutSeconds();
 
-    // required bytes public_ec_key = 7;
     /**
-     * <code>required bytes public_ec_key = 7;</code>
+     * <code>required bytes public_ec_key = 6;</code>
      *
      * <pre>
      * The public part of the ECKey used during channel creation.
@@ -159,7 +136,7 @@ public final class StroemPCWrapperProtos {
      */
     boolean hasPublicEcKey();
     /**
-     * <code>required bytes public_ec_key = 7;</code>
+     * <code>required bytes public_ec_key = 6;</code>
      *
      * <pre>
      * The public part of the ECKey used during channel creation.
@@ -167,9 +144,8 @@ public final class StroemPCWrapperProtos {
      */
     com.google.protobuf.ByteString getPublicEcKey();
 
-    // optional string serverId = 8;
     /**
-     * <code>optional string serverId = 8;</code>
+     * <code>optional string serverId = 7;</code>
      *
      * <pre>
      * Optional fields (used by some wallets)
@@ -177,7 +153,7 @@ public final class StroemPCWrapperProtos {
      */
     boolean hasServerId();
     /**
-     * <code>optional string serverId = 8;</code>
+     * <code>optional string serverId = 7;</code>
      *
      * <pre>
      * Optional fields (used by some wallets)
@@ -185,7 +161,7 @@ public final class StroemPCWrapperProtos {
      */
     java.lang.String getServerId();
     /**
-     * <code>optional string serverId = 8;</code>
+     * <code>optional string serverId = 7;</code>
      *
      * <pre>
      * Optional fields (used by some wallets)
@@ -194,12 +170,28 @@ public final class StroemPCWrapperProtos {
     com.google.protobuf.ByteString
         getServerIdBytes();
 
-    // optional double fiat_max_value = 9;
+    /**
+     * <code>optional int64 miner_fee = 8;</code>
+     *
+     * <pre>
+     * serverId will be set to the host name of the issuer uri.
+     * </pre>
+     */
+    boolean hasMinerFee();
+    /**
+     * <code>optional int64 miner_fee = 8;</code>
+     *
+     * <pre>
+     * serverId will be set to the host name of the issuer uri.
+     * </pre>
+     */
+    long getMinerFee();
+
     /**
      * <code>optional double fiat_max_value = 9;</code>
      *
      * <pre>
-     * serverId will be set to the host name of the issuer uri.
+     * The fiat value corresponding to the max value of the channel.
      * </pre>
      */
     boolean hasFiatMaxValue();
@@ -207,12 +199,11 @@ public final class StroemPCWrapperProtos {
      * <code>optional double fiat_max_value = 9;</code>
      *
      * <pre>
-     * serverId will be set to the host name of the issuer uri.
+     * The fiat value corresponding to the max value of the channel.
      * </pre>
      */
     double getFiatMaxValue();
 
-    // optional string fiat_currency = 10;
     /**
      * <code>optional string fiat_currency = 10;</code>
      *
@@ -239,7 +230,6 @@ public final class StroemPCWrapperProtos {
     com.google.protobuf.ByteString
         getFiatCurrencyBytes();
 
-    // optional string note = 11;
     /**
      * <code>optional string note = 11;</code>
      *
@@ -265,25 +255,40 @@ public final class StroemPCWrapperProtos {
      */
     com.google.protobuf.ByteString
         getNoteBytes();
+
+    /**
+     * <code>optional int64 creation_time = 12;</code>
+     *
+     * <pre>
+     * The number of milliseconds since 1970-01-01
+     * </pre>
+     */
+    boolean hasCreationTime();
+    /**
+     * <code>optional int64 creation_time = 12;</code>
+     *
+     * <pre>
+     * The number of milliseconds since 1970-01-01
+     * </pre>
+     */
+    long getCreationTime();
   }
   /**
    * Protobuf type {@code StroemPaymentChannelProto}
    *
    * <pre>
-   *
    * Extra information about the payment channel needed by Stroem.
    * (some of this data is also possible to retrieve from the bitcoinj funding transaction)
-   *
    * This message holds the creation parameters of the channel, not much mutable state.
-   * For example, StroemPaymentChannel will not know if the channel is closed or the amount consumed.
-   *
+   * For example, StroemPaymentChannelComplete will not know if the channel is closed or the amount consumed.
    * Note: You can use this data to open a new channel, identical to the first, when the original has been closed,
-   * with the exception of fiat_max_value.
+   * with the exception of fiat_max_value (will change with the currency volatility).
    * </pre>
    */
   public static final class StroemPaymentChannelProto extends
-      com.google.protobuf.GeneratedMessage
-      implements StroemPaymentChannelProtoOrBuilder {
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:StroemPaymentChannelProto)
+      StroemPaymentChannelProtoOrBuilder {
     // Use StroemPaymentChannelProto.newBuilder() to construct.
     private StroemPaymentChannelProto(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -330,18 +335,21 @@ public final class StroemPCWrapperProtos {
               break;
             }
             case 10: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              hash_ = input.readBytes();
+              hash_ = bs;
               break;
             }
             case 18: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
-              issuerUri_ = input.readBytes();
+              issuerUri_ = bs;
               break;
             }
             case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000004;
-              issuerName_ = input.readBytes();
+              issuerName_ = bs;
               break;
             }
             case 32: {
@@ -351,22 +359,23 @@ public final class StroemPCWrapperProtos {
             }
             case 40: {
               bitField0_ |= 0x00000010;
-              minerFee_ = input.readInt64();
-              break;
-            }
-            case 48: {
-              bitField0_ |= 0x00000020;
               timeoutSeconds_ = input.readInt64();
               break;
             }
-            case 58: {
-              bitField0_ |= 0x00000040;
+            case 50: {
+              bitField0_ |= 0x00000020;
               publicEcKey_ = input.readBytes();
               break;
             }
-            case 66: {
+            case 58: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000040;
+              serverId_ = bs;
+              break;
+            }
+            case 64: {
               bitField0_ |= 0x00000080;
-              serverId_ = input.readBytes();
+              minerFee_ = input.readInt64();
               break;
             }
             case 73: {
@@ -375,13 +384,20 @@ public final class StroemPCWrapperProtos {
               break;
             }
             case 82: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000200;
-              fiatCurrency_ = input.readBytes();
+              fiatCurrency_ = bs;
               break;
             }
             case 90: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000400;
-              note_ = input.readBytes();
+              note_ = bs;
+              break;
+            }
+            case 96: {
+              bitField0_ |= 0x00000800;
+              creationTime_ = input.readInt64();
               break;
             }
           }
@@ -424,7 +440,6 @@ public final class StroemPCWrapperProtos {
     }
 
     private int bitField0_;
-    // required string hash = 1;
     public static final int HASH_FIELD_NUMBER = 1;
     private java.lang.Object hash_;
     /**
@@ -479,7 +494,6 @@ public final class StroemPCWrapperProtos {
       }
     }
 
-    // required string issuer_uri = 2;
     public static final int ISSUER_URI_FIELD_NUMBER = 2;
     private java.lang.Object issuerUri_;
     /**
@@ -537,7 +551,6 @@ public final class StroemPCWrapperProtos {
       }
     }
 
-    // required string issuer_name = 3;
     public static final int ISSUER_NAME_FIELD_NUMBER = 3;
     private java.lang.Object issuerName_;
     /**
@@ -592,7 +605,6 @@ public final class StroemPCWrapperProtos {
       }
     }
 
-    // required int64 max_value = 4;
     public static final int MAX_VALUE_FIELD_NUMBER = 4;
     private long maxValue_;
     /**
@@ -616,45 +628,20 @@ public final class StroemPCWrapperProtos {
       return maxValue_;
     }
 
-    // required int64 miner_fee = 5;
-    public static final int MINER_FEE_FIELD_NUMBER = 5;
-    private long minerFee_;
-    /**
-     * <code>required int64 miner_fee = 5;</code>
-     *
-     * <pre>
-     * The miner fee (in satoshi).
-     * </pre>
-     */
-    public boolean hasMinerFee() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    /**
-     * <code>required int64 miner_fee = 5;</code>
-     *
-     * <pre>
-     * The miner fee (in satoshi).
-     * </pre>
-     */
-    public long getMinerFee() {
-      return minerFee_;
-    }
-
-    // required int64 timeout_seconds = 6;
-    public static final int TIMEOUT_SECONDS_FIELD_NUMBER = 6;
+    public static final int TIMEOUT_SECONDS_FIELD_NUMBER = 5;
     private long timeoutSeconds_;
     /**
-     * <code>required int64 timeout_seconds = 6;</code>
+     * <code>required int64 timeout_seconds = 5;</code>
      *
      * <pre>
      * The duration of the payment channel, in seconds
      * </pre>
      */
     public boolean hasTimeoutSeconds() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
+      return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>required int64 timeout_seconds = 6;</code>
+     * <code>required int64 timeout_seconds = 5;</code>
      *
      * <pre>
      * The duration of the payment channel, in seconds
@@ -664,21 +651,20 @@ public final class StroemPCWrapperProtos {
       return timeoutSeconds_;
     }
 
-    // required bytes public_ec_key = 7;
-    public static final int PUBLIC_EC_KEY_FIELD_NUMBER = 7;
+    public static final int PUBLIC_EC_KEY_FIELD_NUMBER = 6;
     private com.google.protobuf.ByteString publicEcKey_;
     /**
-     * <code>required bytes public_ec_key = 7;</code>
+     * <code>required bytes public_ec_key = 6;</code>
      *
      * <pre>
      * The public part of the ECKey used during channel creation.
      * </pre>
      */
     public boolean hasPublicEcKey() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
+      return ((bitField0_ & 0x00000020) == 0x00000020);
     }
     /**
-     * <code>required bytes public_ec_key = 7;</code>
+     * <code>required bytes public_ec_key = 6;</code>
      *
      * <pre>
      * The public part of the ECKey used during channel creation.
@@ -688,21 +674,20 @@ public final class StroemPCWrapperProtos {
       return publicEcKey_;
     }
 
-    // optional string serverId = 8;
-    public static final int SERVERID_FIELD_NUMBER = 8;
+    public static final int SERVERID_FIELD_NUMBER = 7;
     private java.lang.Object serverId_;
     /**
-     * <code>optional string serverId = 8;</code>
+     * <code>optional string serverId = 7;</code>
      *
      * <pre>
      * Optional fields (used by some wallets)
      * </pre>
      */
     public boolean hasServerId() {
-      return ((bitField0_ & 0x00000080) == 0x00000080);
+      return ((bitField0_ & 0x00000040) == 0x00000040);
     }
     /**
-     * <code>optional string serverId = 8;</code>
+     * <code>optional string serverId = 7;</code>
      *
      * <pre>
      * Optional fields (used by some wallets)
@@ -723,7 +708,7 @@ public final class StroemPCWrapperProtos {
       }
     }
     /**
-     * <code>optional string serverId = 8;</code>
+     * <code>optional string serverId = 7;</code>
      *
      * <pre>
      * Optional fields (used by some wallets)
@@ -743,14 +728,36 @@ public final class StroemPCWrapperProtos {
       }
     }
 
-    // optional double fiat_max_value = 9;
+    public static final int MINER_FEE_FIELD_NUMBER = 8;
+    private long minerFee_;
+    /**
+     * <code>optional int64 miner_fee = 8;</code>
+     *
+     * <pre>
+     * serverId will be set to the host name of the issuer uri.
+     * </pre>
+     */
+    public boolean hasMinerFee() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    /**
+     * <code>optional int64 miner_fee = 8;</code>
+     *
+     * <pre>
+     * serverId will be set to the host name of the issuer uri.
+     * </pre>
+     */
+    public long getMinerFee() {
+      return minerFee_;
+    }
+
     public static final int FIAT_MAX_VALUE_FIELD_NUMBER = 9;
     private double fiatMaxValue_;
     /**
      * <code>optional double fiat_max_value = 9;</code>
      *
      * <pre>
-     * serverId will be set to the host name of the issuer uri.
+     * The fiat value corresponding to the max value of the channel.
      * </pre>
      */
     public boolean hasFiatMaxValue() {
@@ -760,14 +767,13 @@ public final class StroemPCWrapperProtos {
      * <code>optional double fiat_max_value = 9;</code>
      *
      * <pre>
-     * serverId will be set to the host name of the issuer uri.
+     * The fiat value corresponding to the max value of the channel.
      * </pre>
      */
     public double getFiatMaxValue() {
       return fiatMaxValue_;
     }
 
-    // optional string fiat_currency = 10;
     public static final int FIAT_CURRENCY_FIELD_NUMBER = 10;
     private java.lang.Object fiatCurrency_;
     /**
@@ -822,7 +828,6 @@ public final class StroemPCWrapperProtos {
       }
     }
 
-    // optional string note = 11;
     public static final int NOTE_FIELD_NUMBER = 11;
     private java.lang.Object note_;
     /**
@@ -877,23 +882,48 @@ public final class StroemPCWrapperProtos {
       }
     }
 
+    public static final int CREATION_TIME_FIELD_NUMBER = 12;
+    private long creationTime_;
+    /**
+     * <code>optional int64 creation_time = 12;</code>
+     *
+     * <pre>
+     * The number of milliseconds since 1970-01-01
+     * </pre>
+     */
+    public boolean hasCreationTime() {
+      return ((bitField0_ & 0x00000800) == 0x00000800);
+    }
+    /**
+     * <code>optional int64 creation_time = 12;</code>
+     *
+     * <pre>
+     * The number of milliseconds since 1970-01-01
+     * </pre>
+     */
+    public long getCreationTime() {
+      return creationTime_;
+    }
+
     private void initFields() {
       hash_ = "";
       issuerUri_ = "";
       issuerName_ = "";
       maxValue_ = 0L;
-      minerFee_ = 0L;
       timeoutSeconds_ = 0L;
       publicEcKey_ = com.google.protobuf.ByteString.EMPTY;
       serverId_ = "";
+      minerFee_ = 0L;
       fiatMaxValue_ = 0D;
       fiatCurrency_ = "";
       note_ = "";
+      creationTime_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasHash()) {
         memoizedIsInitialized = 0;
@@ -908,10 +938,6 @@ public final class StroemPCWrapperProtos {
         return false;
       }
       if (!hasMaxValue()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasMinerFee()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -943,16 +969,16 @@ public final class StroemPCWrapperProtos {
         output.writeInt64(4, maxValue_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeInt64(5, minerFee_);
+        output.writeInt64(5, timeoutSeconds_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeInt64(6, timeoutSeconds_);
+        output.writeBytes(6, publicEcKey_);
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        output.writeBytes(7, publicEcKey_);
+        output.writeBytes(7, getServerIdBytes());
       }
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        output.writeBytes(8, getServerIdBytes());
+        output.writeInt64(8, minerFee_);
       }
       if (((bitField0_ & 0x00000100) == 0x00000100)) {
         output.writeDouble(9, fiatMaxValue_);
@@ -962,6 +988,9 @@ public final class StroemPCWrapperProtos {
       }
       if (((bitField0_ & 0x00000400) == 0x00000400)) {
         output.writeBytes(11, getNoteBytes());
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        output.writeInt64(12, creationTime_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -990,19 +1019,19 @@ public final class StroemPCWrapperProtos {
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(5, minerFee_);
+          .computeInt64Size(5, timeoutSeconds_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(6, timeoutSeconds_);
+          .computeBytesSize(6, publicEcKey_);
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(7, publicEcKey_);
+          .computeBytesSize(7, getServerIdBytes());
       }
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(8, getServerIdBytes());
+          .computeInt64Size(8, minerFee_);
       }
       if (((bitField0_ & 0x00000100) == 0x00000100)) {
         size += com.google.protobuf.CodedOutputStream
@@ -1015,6 +1044,10 @@ public final class StroemPCWrapperProtos {
       if (((bitField0_ & 0x00000400) == 0x00000400)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(11, getNoteBytes());
+      }
+      if (((bitField0_ & 0x00000800) == 0x00000800)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(12, creationTime_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1098,20 +1131,18 @@ public final class StroemPCWrapperProtos {
      * Protobuf type {@code StroemPaymentChannelProto}
      *
      * <pre>
-     *
      * Extra information about the payment channel needed by Stroem.
      * (some of this data is also possible to retrieve from the bitcoinj funding transaction)
-     *
      * This message holds the creation parameters of the channel, not much mutable state.
-     * For example, StroemPaymentChannel will not know if the channel is closed or the amount consumed.
-     *
+     * For example, StroemPaymentChannelComplete will not know if the channel is closed or the amount consumed.
      * Note: You can use this data to open a new channel, identical to the first, when the original has been closed,
-     * with the exception of fiat_max_value.
+     * with the exception of fiat_max_value (will change with the currency volatility).
      * </pre>
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:StroemPaymentChannelProto)
+        io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.internal_static_StroemPaymentChannelProto_descriptor;
@@ -1124,7 +1155,7 @@ public final class StroemPCWrapperProtos {
                 io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto.class, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto.Builder.class);
       }
 
-      // Construct using io.stroem.clientj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto.newBuilder()
+      // Construct using io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -1152,13 +1183,13 @@ public final class StroemPCWrapperProtos {
         bitField0_ = (bitField0_ & ~0x00000004);
         maxValue_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000008);
-        minerFee_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000010);
         timeoutSeconds_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000020);
+        bitField0_ = (bitField0_ & ~0x00000010);
         publicEcKey_ = com.google.protobuf.ByteString.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000020);
         serverId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000040);
+        minerFee_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000080);
         fiatMaxValue_ = 0D;
         bitField0_ = (bitField0_ & ~0x00000100);
@@ -1166,6 +1197,8 @@ public final class StroemPCWrapperProtos {
         bitField0_ = (bitField0_ & ~0x00000200);
         note_ = "";
         bitField0_ = (bitField0_ & ~0x00000400);
+        creationTime_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000800);
         return this;
       }
 
@@ -1213,19 +1246,19 @@ public final class StroemPCWrapperProtos {
         if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
           to_bitField0_ |= 0x00000010;
         }
-        result.minerFee_ = minerFee_;
+        result.timeoutSeconds_ = timeoutSeconds_;
         if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
           to_bitField0_ |= 0x00000020;
         }
-        result.timeoutSeconds_ = timeoutSeconds_;
+        result.publicEcKey_ = publicEcKey_;
         if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
           to_bitField0_ |= 0x00000040;
         }
-        result.publicEcKey_ = publicEcKey_;
+        result.serverId_ = serverId_;
         if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
           to_bitField0_ |= 0x00000080;
         }
-        result.serverId_ = serverId_;
+        result.minerFee_ = minerFee_;
         if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
           to_bitField0_ |= 0x00000100;
         }
@@ -1238,6 +1271,10 @@ public final class StroemPCWrapperProtos {
           to_bitField0_ |= 0x00000400;
         }
         result.note_ = note_;
+        if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
+          to_bitField0_ |= 0x00000800;
+        }
+        result.creationTime_ = creationTime_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1272,9 +1309,6 @@ public final class StroemPCWrapperProtos {
         if (other.hasMaxValue()) {
           setMaxValue(other.getMaxValue());
         }
-        if (other.hasMinerFee()) {
-          setMinerFee(other.getMinerFee());
-        }
         if (other.hasTimeoutSeconds()) {
           setTimeoutSeconds(other.getTimeoutSeconds());
         }
@@ -1282,9 +1316,12 @@ public final class StroemPCWrapperProtos {
           setPublicEcKey(other.getPublicEcKey());
         }
         if (other.hasServerId()) {
-          bitField0_ |= 0x00000080;
+          bitField0_ |= 0x00000040;
           serverId_ = other.serverId_;
           onChanged();
+        }
+        if (other.hasMinerFee()) {
+          setMinerFee(other.getMinerFee());
         }
         if (other.hasFiatMaxValue()) {
           setFiatMaxValue(other.getFiatMaxValue());
@@ -1298,6 +1335,9 @@ public final class StroemPCWrapperProtos {
           bitField0_ |= 0x00000400;
           note_ = other.note_;
           onChanged();
+        }
+        if (other.hasCreationTime()) {
+          setCreationTime(other.getCreationTime());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1317,10 +1357,6 @@ public final class StroemPCWrapperProtos {
           return false;
         }
         if (!hasMaxValue()) {
-          
-          return false;
-        }
-        if (!hasMinerFee()) {
           
           return false;
         }
@@ -1354,7 +1390,6 @@ public final class StroemPCWrapperProtos {
       }
       private int bitField0_;
 
-      // required string hash = 1;
       private java.lang.Object hash_ = "";
       /**
        * <code>required string hash = 1;</code>
@@ -1376,9 +1411,12 @@ public final class StroemPCWrapperProtos {
       public java.lang.String getHash() {
         java.lang.Object ref = hash_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          hash_ = s;
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            hash_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1452,7 +1490,6 @@ public final class StroemPCWrapperProtos {
         return this;
       }
 
-      // required string issuer_uri = 2;
       private java.lang.Object issuerUri_ = "";
       /**
        * <code>required string issuer_uri = 2;</code>
@@ -1476,9 +1513,12 @@ public final class StroemPCWrapperProtos {
       public java.lang.String getIssuerUri() {
         java.lang.Object ref = issuerUri_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          issuerUri_ = s;
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            issuerUri_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1556,7 +1596,6 @@ public final class StroemPCWrapperProtos {
         return this;
       }
 
-      // required string issuer_name = 3;
       private java.lang.Object issuerName_ = "";
       /**
        * <code>required string issuer_name = 3;</code>
@@ -1578,9 +1617,12 @@ public final class StroemPCWrapperProtos {
       public java.lang.String getIssuerName() {
         java.lang.Object ref = issuerName_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          issuerName_ = s;
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            issuerName_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1654,7 +1696,6 @@ public final class StroemPCWrapperProtos {
         return this;
       }
 
-      // required int64 max_value = 4;
       private long maxValue_ ;
       /**
        * <code>required int64 max_value = 4;</code>
@@ -1703,69 +1744,19 @@ public final class StroemPCWrapperProtos {
         return this;
       }
 
-      // required int64 miner_fee = 5;
-      private long minerFee_ ;
-      /**
-       * <code>required int64 miner_fee = 5;</code>
-       *
-       * <pre>
-       * The miner fee (in satoshi).
-       * </pre>
-       */
-      public boolean hasMinerFee() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      /**
-       * <code>required int64 miner_fee = 5;</code>
-       *
-       * <pre>
-       * The miner fee (in satoshi).
-       * </pre>
-       */
-      public long getMinerFee() {
-        return minerFee_;
-      }
-      /**
-       * <code>required int64 miner_fee = 5;</code>
-       *
-       * <pre>
-       * The miner fee (in satoshi).
-       * </pre>
-       */
-      public Builder setMinerFee(long value) {
-        bitField0_ |= 0x00000010;
-        minerFee_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required int64 miner_fee = 5;</code>
-       *
-       * <pre>
-       * The miner fee (in satoshi).
-       * </pre>
-       */
-      public Builder clearMinerFee() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        minerFee_ = 0L;
-        onChanged();
-        return this;
-      }
-
-      // required int64 timeout_seconds = 6;
       private long timeoutSeconds_ ;
       /**
-       * <code>required int64 timeout_seconds = 6;</code>
+       * <code>required int64 timeout_seconds = 5;</code>
        *
        * <pre>
        * The duration of the payment channel, in seconds
        * </pre>
        */
       public boolean hasTimeoutSeconds() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
+        return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>required int64 timeout_seconds = 6;</code>
+       * <code>required int64 timeout_seconds = 5;</code>
        *
        * <pre>
        * The duration of the payment channel, in seconds
@@ -1775,46 +1766,45 @@ public final class StroemPCWrapperProtos {
         return timeoutSeconds_;
       }
       /**
-       * <code>required int64 timeout_seconds = 6;</code>
+       * <code>required int64 timeout_seconds = 5;</code>
        *
        * <pre>
        * The duration of the payment channel, in seconds
        * </pre>
        */
       public Builder setTimeoutSeconds(long value) {
-        bitField0_ |= 0x00000020;
+        bitField0_ |= 0x00000010;
         timeoutSeconds_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required int64 timeout_seconds = 6;</code>
+       * <code>required int64 timeout_seconds = 5;</code>
        *
        * <pre>
        * The duration of the payment channel, in seconds
        * </pre>
        */
       public Builder clearTimeoutSeconds() {
-        bitField0_ = (bitField0_ & ~0x00000020);
+        bitField0_ = (bitField0_ & ~0x00000010);
         timeoutSeconds_ = 0L;
         onChanged();
         return this;
       }
 
-      // required bytes public_ec_key = 7;
       private com.google.protobuf.ByteString publicEcKey_ = com.google.protobuf.ByteString.EMPTY;
       /**
-       * <code>required bytes public_ec_key = 7;</code>
+       * <code>required bytes public_ec_key = 6;</code>
        *
        * <pre>
        * The public part of the ECKey used during channel creation.
        * </pre>
        */
       public boolean hasPublicEcKey() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
+        return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       /**
-       * <code>required bytes public_ec_key = 7;</code>
+       * <code>required bytes public_ec_key = 6;</code>
        *
        * <pre>
        * The public part of the ECKey used during channel creation.
@@ -1824,7 +1814,7 @@ public final class StroemPCWrapperProtos {
         return publicEcKey_;
       }
       /**
-       * <code>required bytes public_ec_key = 7;</code>
+       * <code>required bytes public_ec_key = 6;</code>
        *
        * <pre>
        * The public part of the ECKey used during channel creation.
@@ -1834,39 +1824,38 @@ public final class StroemPCWrapperProtos {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000040;
+  bitField0_ |= 0x00000020;
         publicEcKey_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required bytes public_ec_key = 7;</code>
+       * <code>required bytes public_ec_key = 6;</code>
        *
        * <pre>
        * The public part of the ECKey used during channel creation.
        * </pre>
        */
       public Builder clearPublicEcKey() {
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000020);
         publicEcKey_ = getDefaultInstance().getPublicEcKey();
         onChanged();
         return this;
       }
 
-      // optional string serverId = 8;
       private java.lang.Object serverId_ = "";
       /**
-       * <code>optional string serverId = 8;</code>
+       * <code>optional string serverId = 7;</code>
        *
        * <pre>
        * Optional fields (used by some wallets)
        * </pre>
        */
       public boolean hasServerId() {
-        return ((bitField0_ & 0x00000080) == 0x00000080);
+        return ((bitField0_ & 0x00000040) == 0x00000040);
       }
       /**
-       * <code>optional string serverId = 8;</code>
+       * <code>optional string serverId = 7;</code>
        *
        * <pre>
        * Optional fields (used by some wallets)
@@ -1875,16 +1864,19 @@ public final class StroemPCWrapperProtos {
       public java.lang.String getServerId() {
         java.lang.Object ref = serverId_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          serverId_ = s;
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            serverId_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>optional string serverId = 8;</code>
+       * <code>optional string serverId = 7;</code>
        *
        * <pre>
        * Optional fields (used by some wallets)
@@ -1904,7 +1896,7 @@ public final class StroemPCWrapperProtos {
         }
       }
       /**
-       * <code>optional string serverId = 8;</code>
+       * <code>optional string serverId = 7;</code>
        *
        * <pre>
        * Optional fields (used by some wallets)
@@ -1915,26 +1907,26 @@ public final class StroemPCWrapperProtos {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000080;
+  bitField0_ |= 0x00000040;
         serverId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string serverId = 8;</code>
+       * <code>optional string serverId = 7;</code>
        *
        * <pre>
        * Optional fields (used by some wallets)
        * </pre>
        */
       public Builder clearServerId() {
-        bitField0_ = (bitField0_ & ~0x00000080);
+        bitField0_ = (bitField0_ & ~0x00000040);
         serverId_ = getDefaultInstance().getServerId();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string serverId = 8;</code>
+       * <code>optional string serverId = 7;</code>
        *
        * <pre>
        * Optional fields (used by some wallets)
@@ -1945,19 +1937,66 @@ public final class StroemPCWrapperProtos {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000080;
+  bitField0_ |= 0x00000040;
         serverId_ = value;
         onChanged();
         return this;
       }
 
-      // optional double fiat_max_value = 9;
+      private long minerFee_ ;
+      /**
+       * <code>optional int64 miner_fee = 8;</code>
+       *
+       * <pre>
+       * serverId will be set to the host name of the issuer uri.
+       * </pre>
+       */
+      public boolean hasMinerFee() {
+        return ((bitField0_ & 0x00000080) == 0x00000080);
+      }
+      /**
+       * <code>optional int64 miner_fee = 8;</code>
+       *
+       * <pre>
+       * serverId will be set to the host name of the issuer uri.
+       * </pre>
+       */
+      public long getMinerFee() {
+        return minerFee_;
+      }
+      /**
+       * <code>optional int64 miner_fee = 8;</code>
+       *
+       * <pre>
+       * serverId will be set to the host name of the issuer uri.
+       * </pre>
+       */
+      public Builder setMinerFee(long value) {
+        bitField0_ |= 0x00000080;
+        minerFee_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 miner_fee = 8;</code>
+       *
+       * <pre>
+       * serverId will be set to the host name of the issuer uri.
+       * </pre>
+       */
+      public Builder clearMinerFee() {
+        bitField0_ = (bitField0_ & ~0x00000080);
+        minerFee_ = 0L;
+        onChanged();
+        return this;
+      }
+
       private double fiatMaxValue_ ;
       /**
        * <code>optional double fiat_max_value = 9;</code>
        *
        * <pre>
-       * serverId will be set to the host name of the issuer uri.
+       * The fiat value corresponding to the max value of the channel.
        * </pre>
        */
       public boolean hasFiatMaxValue() {
@@ -1967,7 +2006,7 @@ public final class StroemPCWrapperProtos {
        * <code>optional double fiat_max_value = 9;</code>
        *
        * <pre>
-       * serverId will be set to the host name of the issuer uri.
+       * The fiat value corresponding to the max value of the channel.
        * </pre>
        */
       public double getFiatMaxValue() {
@@ -1977,7 +2016,7 @@ public final class StroemPCWrapperProtos {
        * <code>optional double fiat_max_value = 9;</code>
        *
        * <pre>
-       * serverId will be set to the host name of the issuer uri.
+       * The fiat value corresponding to the max value of the channel.
        * </pre>
        */
       public Builder setFiatMaxValue(double value) {
@@ -1990,7 +2029,7 @@ public final class StroemPCWrapperProtos {
        * <code>optional double fiat_max_value = 9;</code>
        *
        * <pre>
-       * serverId will be set to the host name of the issuer uri.
+       * The fiat value corresponding to the max value of the channel.
        * </pre>
        */
       public Builder clearFiatMaxValue() {
@@ -2000,7 +2039,6 @@ public final class StroemPCWrapperProtos {
         return this;
       }
 
-      // optional string fiat_currency = 10;
       private java.lang.Object fiatCurrency_ = "";
       /**
        * <code>optional string fiat_currency = 10;</code>
@@ -2022,9 +2060,12 @@ public final class StroemPCWrapperProtos {
       public java.lang.String getFiatCurrency() {
         java.lang.Object ref = fiatCurrency_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          fiatCurrency_ = s;
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            fiatCurrency_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -2098,7 +2139,6 @@ public final class StroemPCWrapperProtos {
         return this;
       }
 
-      // optional string note = 11;
       private java.lang.Object note_ = "";
       /**
        * <code>optional string note = 11;</code>
@@ -2120,9 +2160,12 @@ public final class StroemPCWrapperProtos {
       public java.lang.String getNote() {
         java.lang.Object ref = note_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          note_ = s;
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            note_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -2196,6 +2239,54 @@ public final class StroemPCWrapperProtos {
         return this;
       }
 
+      private long creationTime_ ;
+      /**
+       * <code>optional int64 creation_time = 12;</code>
+       *
+       * <pre>
+       * The number of milliseconds since 1970-01-01
+       * </pre>
+       */
+      public boolean hasCreationTime() {
+        return ((bitField0_ & 0x00000800) == 0x00000800);
+      }
+      /**
+       * <code>optional int64 creation_time = 12;</code>
+       *
+       * <pre>
+       * The number of milliseconds since 1970-01-01
+       * </pre>
+       */
+      public long getCreationTime() {
+        return creationTime_;
+      }
+      /**
+       * <code>optional int64 creation_time = 12;</code>
+       *
+       * <pre>
+       * The number of milliseconds since 1970-01-01
+       * </pre>
+       */
+      public Builder setCreationTime(long value) {
+        bitField0_ |= 0x00000800;
+        creationTime_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 creation_time = 12;</code>
+       *
+       * <pre>
+       * The number of milliseconds since 1970-01-01
+       * </pre>
+       */
+      public Builder clearCreationTime() {
+        bitField0_ = (bitField0_ & ~0x00000800);
+        creationTime_ = 0L;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:StroemPaymentChannelProto)
     }
 
@@ -2207,10 +2298,10 @@ public final class StroemPCWrapperProtos {
     // @@protoc_insertion_point(class_scope:StroemPaymentChannelProto)
   }
 
-  public interface PreferredStroemPaymentChannelProtoOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+  public interface PreferredStroemPaymentChannelProtoOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:PreferredStroemPaymentChannelProto)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required string hash = 1;
     /**
      * <code>required string hash = 1;</code>
      *
@@ -2237,7 +2328,6 @@ public final class StroemPCWrapperProtos {
     com.google.protobuf.ByteString
         getHashBytes();
 
-    // required string issuer_name = 2;
     /**
      * <code>required string issuer_name = 2;</code>
      *
@@ -2268,14 +2358,14 @@ public final class StroemPCWrapperProtos {
    * Protobuf type {@code PreferredStroemPaymentChannelProto}
    *
    * <pre>
-   *
    * Only used if the wallet can have many open payment channels concurrently,
    * and you have a need to quickly find the channel the user prefers.
    * </pre>
    */
   public static final class PreferredStroemPaymentChannelProto extends
-      com.google.protobuf.GeneratedMessage
-      implements PreferredStroemPaymentChannelProtoOrBuilder {
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:PreferredStroemPaymentChannelProto)
+      PreferredStroemPaymentChannelProtoOrBuilder {
     // Use PreferredStroemPaymentChannelProto.newBuilder() to construct.
     private PreferredStroemPaymentChannelProto(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -2322,13 +2412,15 @@ public final class StroemPCWrapperProtos {
               break;
             }
             case 10: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              hash_ = input.readBytes();
+              hash_ = bs;
               break;
             }
             case 18: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
-              issuerName_ = input.readBytes();
+              issuerName_ = bs;
               break;
             }
           }
@@ -2371,7 +2463,6 @@ public final class StroemPCWrapperProtos {
     }
 
     private int bitField0_;
-    // required string hash = 1;
     public static final int HASH_FIELD_NUMBER = 1;
     private java.lang.Object hash_;
     /**
@@ -2426,7 +2517,6 @@ public final class StroemPCWrapperProtos {
       }
     }
 
-    // required string issuer_name = 2;
     public static final int ISSUER_NAME_FIELD_NUMBER = 2;
     private java.lang.Object issuerName_;
     /**
@@ -2488,7 +2578,8 @@ public final class StroemPCWrapperProtos {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasHash()) {
         memoizedIsInitialized = 0;
@@ -2610,14 +2701,14 @@ public final class StroemPCWrapperProtos {
      * Protobuf type {@code PreferredStroemPaymentChannelProto}
      *
      * <pre>
-     *
      * Only used if the wallet can have many open payment channels concurrently,
      * and you have a need to quickly find the channel the user prefers.
      * </pre>
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProtoOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:PreferredStroemPaymentChannelProto)
+        io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProtoOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.internal_static_PreferredStroemPaymentChannelProto_descriptor;
@@ -2630,7 +2721,7 @@ public final class StroemPCWrapperProtos {
                 io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.class, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.Builder.class);
       }
 
-      // Construct using io.stroem.clientj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.newBuilder()
+      // Construct using io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -2751,7 +2842,6 @@ public final class StroemPCWrapperProtos {
       }
       private int bitField0_;
 
-      // required string hash = 1;
       private java.lang.Object hash_ = "";
       /**
        * <code>required string hash = 1;</code>
@@ -2773,9 +2863,12 @@ public final class StroemPCWrapperProtos {
       public java.lang.String getHash() {
         java.lang.Object ref = hash_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          hash_ = s;
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            hash_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -2849,7 +2942,6 @@ public final class StroemPCWrapperProtos {
         return this;
       }
 
-      // required string issuer_name = 2;
       private java.lang.Object issuerName_ = "";
       /**
        * <code>required string issuer_name = 2;</code>
@@ -2871,9 +2963,12 @@ public final class StroemPCWrapperProtos {
       public java.lang.String getIssuerName() {
         java.lang.Object ref = issuerName_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          issuerName_ = s;
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            issuerName_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -2958,10 +3053,10 @@ public final class StroemPCWrapperProtos {
     // @@protoc_insertion_point(class_scope:PreferredStroemPaymentChannelProto)
   }
 
-  public interface StroemPaymentChannelProtosOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+  public interface StroemPaymentChannelProtosOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:StroemPaymentChannelProtos)
+      com.google.protobuf.MessageOrBuilder {
 
-    // repeated .StroemPaymentChannelProto stroem_payment_channel = 1;
     /**
      * <code>repeated .StroemPaymentChannelProto stroem_payment_channel = 1;</code>
      *
@@ -2969,7 +3064,7 @@ public final class StroemPCWrapperProtos {
      * the stroem payment channel, repeated
      * </pre>
      */
-    java.util.List<io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto>
+    java.util.List<io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto> 
         getStroemPaymentChannelList();
     /**
      * <code>repeated .StroemPaymentChannelProto stroem_payment_channel = 1;</code>
@@ -2994,7 +3089,7 @@ public final class StroemPCWrapperProtos {
      * the stroem payment channel, repeated
      * </pre>
      */
-    java.util.List<? extends io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder>
+    java.util.List<? extends io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder> 
         getStroemPaymentChannelOrBuilderList();
     /**
      * <code>repeated .StroemPaymentChannelProto stroem_payment_channel = 1;</code>
@@ -3006,7 +3101,6 @@ public final class StroemPCWrapperProtos {
     io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder getStroemPaymentChannelOrBuilder(
         int index);
 
-    // optional .PreferredStroemPaymentChannelProto preferred_channel = 2;
     /**
      * <code>optional .PreferredStroemPaymentChannelProto preferred_channel = 2;</code>
      *
@@ -3036,13 +3130,13 @@ public final class StroemPCWrapperProtos {
    * Protobuf type {@code StroemPaymentChannelProtos}
    *
    * <pre>
-   *
    * A collection of stroem payment channels
    * </pre>
    */
   public static final class StroemPaymentChannelProtos extends
-      com.google.protobuf.GeneratedMessage
-      implements StroemPaymentChannelProtosOrBuilder {
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:StroemPaymentChannelProtos)
+      StroemPaymentChannelProtosOrBuilder {
     // Use StroemPaymentChannelProtos.newBuilder() to construct.
     private StroemPaymentChannelProtos(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -3152,7 +3246,6 @@ public final class StroemPCWrapperProtos {
     }
 
     private int bitField0_;
-    // repeated .StroemPaymentChannelProto stroem_payment_channel = 1;
     public static final int STROEM_PAYMENT_CHANNEL_FIELD_NUMBER = 1;
     private java.util.List<io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto> stroemPaymentChannel_;
     /**
@@ -3172,7 +3265,7 @@ public final class StroemPCWrapperProtos {
      * the stroem payment channel, repeated
      * </pre>
      */
-    public java.util.List<? extends io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder>
+    public java.util.List<? extends io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder> 
         getStroemPaymentChannelOrBuilderList() {
       return stroemPaymentChannel_;
     }
@@ -3208,7 +3301,6 @@ public final class StroemPCWrapperProtos {
       return stroemPaymentChannel_.get(index);
     }
 
-    // optional .PreferredStroemPaymentChannelProto preferred_channel = 2;
     public static final int PREFERRED_CHANNEL_FIELD_NUMBER = 2;
     private io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto preferredChannel_;
     /**
@@ -3249,7 +3341,8 @@ public final class StroemPCWrapperProtos {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       for (int i = 0; i < getStroemPaymentChannelCount(); i++) {
         if (!getStroemPaymentChannel(i).isInitialized()) {
@@ -3375,13 +3468,13 @@ public final class StroemPCWrapperProtos {
      * Protobuf type {@code StroemPaymentChannelProtos}
      *
      * <pre>
-     *
      * A collection of stroem payment channels
      * </pre>
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtosOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:StroemPaymentChannelProtos)
+        io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtosOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.internal_static_StroemPaymentChannelProtos_descriptor;
@@ -3394,7 +3487,7 @@ public final class StroemPCWrapperProtos {
                 io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtos.class, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtos.Builder.class);
       }
 
-      // Construct using io.stroem.clientj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtos.newBuilder()
+      // Construct using io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtos.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -3557,7 +3650,6 @@ public final class StroemPCWrapperProtos {
       }
       private int bitField0_;
 
-      // repeated .StroemPaymentChannelProto stroem_payment_channel = 1;
       private java.util.List<io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto> stroemPaymentChannel_ =
         java.util.Collections.emptyList();
       private void ensureStroemPaymentChannelIsMutable() {
@@ -3739,7 +3831,8 @@ public final class StroemPCWrapperProtos {
           java.lang.Iterable<? extends io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto> values) {
         if (stroemPaymentChannelBuilder_ == null) {
           ensureStroemPaymentChannelIsMutable();
-          super.addAll(values, stroemPaymentChannel_);
+          com.google.protobuf.AbstractMessageLite.Builder.addAll(
+              values, stroemPaymentChannel_);
           onChanged();
         } else {
           stroemPaymentChannelBuilder_.addAllMessages(values);
@@ -3812,7 +3905,7 @@ public final class StroemPCWrapperProtos {
        * the stroem payment channel, repeated
        * </pre>
        */
-      public java.util.List<? extends io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder>
+      public java.util.List<? extends io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder> 
            getStroemPaymentChannelOrBuilderList() {
         if (stroemPaymentChannelBuilder_ != null) {
           return stroemPaymentChannelBuilder_.getMessageOrBuilderList();
@@ -3850,12 +3943,12 @@ public final class StroemPCWrapperProtos {
        * the stroem payment channel, repeated
        * </pre>
        */
-      public java.util.List<io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto.Builder>
+      public java.util.List<io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto.Builder> 
            getStroemPaymentChannelBuilderList() {
         return getStroemPaymentChannelFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilder<
-          io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto.Builder, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder>
+          io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProto.Builder, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.StroemPaymentChannelProtoOrBuilder> 
           getStroemPaymentChannelFieldBuilder() {
         if (stroemPaymentChannelBuilder_ == null) {
           stroemPaymentChannelBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
@@ -3869,7 +3962,6 @@ public final class StroemPCWrapperProtos {
         return stroemPaymentChannelBuilder_;
       }
 
-      // optional .PreferredStroemPaymentChannelProto preferred_channel = 2;
       private io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto preferredChannel_ = io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.Builder, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProtoOrBuilder> preferredChannelBuilder_;
@@ -4009,12 +4101,12 @@ public final class StroemPCWrapperProtos {
        * </pre>
        */
       private com.google.protobuf.SingleFieldBuilder<
-          io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.Builder, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProtoOrBuilder>
+          io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.Builder, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProtoOrBuilder> 
           getPreferredChannelFieldBuilder() {
         if (preferredChannelBuilder_ == null) {
           preferredChannelBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProto.Builder, io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos.PreferredStroemPaymentChannelProtoOrBuilder>(
-                  preferredChannel_,
+                  getPreferredChannel(),
                   getParentForChildren(),
                   isClean());
           preferredChannel_ = null;
@@ -4033,17 +4125,17 @@ public final class StroemPCWrapperProtos {
     // @@protoc_insertion_point(class_scope:StroemPaymentChannelProtos)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_StroemPaymentChannelProto_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_StroemPaymentChannelProto_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_PreferredStroemPaymentChannelProto_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_PreferredStroemPaymentChannelProto_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_StroemPaymentChannelProtos_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -4058,51 +4150,52 @@ public final class StroemPCWrapperProtos {
   static {
     java.lang.String[] descriptorData = {
       "\n,src/main/protobuf/stroemPaymentChannel" +
-      ".proto\"\367\001\n\031StroemPaymentChannelProto\022\014\n\004" +
+      ".proto\"\216\002\n\031StroemPaymentChannelProto\022\014\n\004" +
       "hash\030\001 \002(\t\022\022\n\nissuer_uri\030\002 \002(\t\022\023\n\013issuer" +
-      "_name\030\003 \002(\t\022\021\n\tmax_value\030\004 \002(\003\022\021\n\tminer_" +
-      "fee\030\005 \002(\003\022\027\n\017timeout_seconds\030\006 \002(\003\022\025\n\rpu" +
-      "blic_ec_key\030\007 \002(\014\022\020\n\010serverId\030\010 \001(\t\022\026\n\016f" +
+      "_name\030\003 \002(\t\022\021\n\tmax_value\030\004 \002(\003\022\027\n\017timeou" +
+      "t_seconds\030\005 \002(\003\022\025\n\rpublic_ec_key\030\006 \002(\014\022\020" +
+      "\n\010serverId\030\007 \001(\t\022\021\n\tminer_fee\030\010 \001(\003\022\026\n\016f" +
       "iat_max_value\030\t \001(\001\022\025\n\rfiat_currency\030\n \001" +
-      "(\t\022\014\n\004note\030\013 \001(\t\"G\n\"PreferredStroemPayme" +
-      "ntChannelProto\022\014\n\004hash\030\001 \002(\t\022\023\n\013issuer_n" +
-      "ame\030\002 \002(\t\"\230\001\n\032StroemPaymentChannelProtos",
-      "\022:\n\026stroem_payment_channel\030\001 \003(\0132\032.Stroe" +
-      "mPaymentChannelProto\022>\n\021preferred_channe" +
-      "l\030\002 \001(\0132#.PreferredStroemPaymentChannelP" +
-      "rotoB<\n#io.stroem.clientj.persistence.pr" +
-      "otoB\025StroemPCWrapperProtos"
+      "(\t\022\014\n\004note\030\013 \001(\t\022\025\n\rcreation_time\030\014 \001(\003\"" +
+      "G\n\"PreferredStroemPaymentChannelProto\022\014\n" +
+      "\004hash\030\001 \002(\t\022\023\n\013issuer_name\030\002 \002(\t\"\230\001\n\032Str",
+      "oemPaymentChannelProtos\022:\n\026stroem_paymen" +
+      "t_channel\030\001 \003(\0132\032.StroemPaymentChannelPr" +
+      "oto\022>\n\021preferred_channel\030\002 \001(\0132#.Preferr" +
+      "edStroemPaymentChannelProtoB>\n%io.stroem" +
+      ".consumerj.persistence.protoB\025StroemPCWr" +
+      "apperProtos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_StroemPaymentChannelProto_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_StroemPaymentChannelProto_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_StroemPaymentChannelProto_descriptor,
-              new java.lang.String[] { "Hash", "IssuerUri", "IssuerName", "MaxValue", "MinerFee", "TimeoutSeconds", "PublicEcKey", "ServerId", "FiatMaxValue", "FiatCurrency", "Note", });
-          internal_static_PreferredStroemPaymentChannelProto_descriptor =
-            getDescriptor().getMessageTypes().get(1);
-          internal_static_PreferredStroemPaymentChannelProto_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_PreferredStroemPaymentChannelProto_descriptor,
-              new java.lang.String[] { "Hash", "IssuerName", });
-          internal_static_StroemPaymentChannelProtos_descriptor =
-            getDescriptor().getMessageTypes().get(2);
-          internal_static_StroemPaymentChannelProtos_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_StroemPaymentChannelProtos_descriptor,
-              new java.lang.String[] { "StroemPaymentChannel", "PreferredChannel", });
-          return null;
-        }
-      };
+        new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
+          public com.google.protobuf.ExtensionRegistry assignDescriptors(
+              com.google.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            return null;
+          }
+        };
     com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
+    internal_static_StroemPaymentChannelProto_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_StroemPaymentChannelProto_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_StroemPaymentChannelProto_descriptor,
+        new java.lang.String[] { "Hash", "IssuerUri", "IssuerName", "MaxValue", "TimeoutSeconds", "PublicEcKey", "ServerId", "MinerFee", "FiatMaxValue", "FiatCurrency", "Note", "CreationTime", });
+    internal_static_PreferredStroemPaymentChannelProto_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_PreferredStroemPaymentChannelProto_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_PreferredStroemPaymentChannelProto_descriptor,
+        new java.lang.String[] { "Hash", "IssuerName", });
+    internal_static_StroemPaymentChannelProtos_descriptor =
+      getDescriptor().getMessageTypes().get(2);
+    internal_static_StroemPaymentChannelProtos_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_StroemPaymentChannelProtos_descriptor,
+        new java.lang.String[] { "StroemPaymentChannel", "PreferredChannel", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

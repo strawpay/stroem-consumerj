@@ -139,6 +139,13 @@ public class StroemPaymentChannelRepository {
       builder.setFiatCurrency(PROTO_ABSENT_STRING);
     }
 
+    // Creation date
+    if (channel.getCreationTime() != null) {
+      builder.setCreationTime(channel.getCreationTime().getTime());
+    } else {
+      builder.setCreationTime(PROTO_ABSENT_VALUE);
+    }
+
     return builder.build();
   }
 }

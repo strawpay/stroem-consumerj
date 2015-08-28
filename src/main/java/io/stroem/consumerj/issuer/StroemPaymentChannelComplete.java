@@ -5,6 +5,7 @@ import io.stroem.consumerj.persistence.proto.StroemPCWrapperProtos;
 import org.bitcoinj.core.Coin;
 
 import javax.annotation.Nullable;
+import java.util.Date;
 
 /**
  * This class holds some additional fields that must be present for existing
@@ -28,11 +29,16 @@ public class StroemPaymentChannelComplete extends StroemPaymentChannelConfigurat
      */
     private String issuerName;
 
+    /**
+     * The creation timestamp
+     */
+    private Date creationTime;
+
 
     /**
      * Use one of the other constructors  (still, no need to make this private)
      */
-    public StroemPaymentChannelComplete(String hash, String issuerName, String issuerUri, String serverId, Coin maxValue,
+    public StroemPaymentChannelComplete(String hash, String issuerName, Date creationTime, String issuerUri, String serverId, Coin maxValue,
                                          long timeoutSeconds, byte[] publicEcKey, @Nullable Coin minerFee,
                                          @Nullable Double fiatMaxValue, @Nullable String fiatCurrency, @Nullable String note) {
         super(issuerUri, serverId, maxValue,
@@ -40,6 +46,7 @@ public class StroemPaymentChannelComplete extends StroemPaymentChannelConfigurat
                 fiatMaxValue, fiatCurrency, note);
         this.hash = hash;
         this.issuerName = issuerName;
+        this.creationTime = creationTime;
     }
 
     /**
@@ -47,11 +54,12 @@ public class StroemPaymentChannelComplete extends StroemPaymentChannelConfigurat
      *
      * @param hash
      * @param issuerName
+     * @param creationTime
      * @param channel
      * @return
      */
-    public static StroemPaymentChannelComplete buildFrom(String hash, String issuerName, StroemPaymentChannelConfiguration channel) {
-        return new StroemPaymentChannelComplete(hash, issuerName, channel.getIssuerUri(), channel.getServerId(),
+    public static StroemPaymentChannelComplete buildFrom(String hash, String issuerName, Date creationTime, StroemPaymentChannelConfiguration channel) {
+        return new StroemPaymentChannelComplete(hash, issuerName, creationTime, channel.getIssuerUri(), channel.getServerId(),
                 channel.getMaxValue(), channel.getTimeoutSeconds(), channel.getPublicEcKey(), channel.getMinerFee(),
                 channel.getFiatMaxValue(), channel.getFiatCurrency(), channel.getNote());
     }
@@ -74,6 +82,7 @@ public class StroemPaymentChannelComplete extends StroemPaymentChannelConfigurat
         @Nullable Double fiatMaxValue = null;
         @Nullable String fiatCurrency = null;
         @Nullable String note = null;
+        @Nullable Date creationDate = null;
 
         // Server id
         if (proto.hasServerId()) {
@@ -112,7 +121,14 @@ public class StroemPaymentChannelComplete extends StroemPaymentChannelConfigurat
             }
         }
 
-        return new StroemPaymentChannelComplete(hash, issuerName, issuerUri, serverId, maxValue,
+        // Creation Date
+        if (proto.hasCreationTime()) {
+            if (proto.getCreationTime() != StroemPaymentChannelRepository.PROTO_ABSENT_VALUE) {
+                creationDate = new Date(proto.getCreationTime());
+            }
+        }
+
+        return new StroemPaymentChannelComplete(hash, issuerName, creationDate, issuerUri, serverId, maxValue,
                 timeoutSeconds, publicEcKey, minerFee, fiatMaxValue, fiatCurrency, note);
     }
 
@@ -125,6 +141,10 @@ public class StroemPaymentChannelComplete extends StroemPaymentChannelConfigurat
 
     public String getIssuerName() {
         return issuerName;
+    }
+
+    public Date getCreationTime() {
+        return creationTime;
     }
 
     @Override
@@ -142,5 +162,15 @@ public class StroemPaymentChannelComplete extends StroemPaymentChannelConfigurat
     @Override
     public int hashCode() {
         return hash.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "StroemPaymentChannelComplete{" +
+                "hash='" + hash + '\'' +
+                ", issuerName='" + issuerName + '\'' +
+                ", creationTime=" + creationTime +
+                super.toString() +
+                '}';
     }
 }

@@ -73,27 +73,31 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
         log.debug("Written to protobuf parser.");
     }
 
-    // This method is a bit messy, There might be a simpler way to figure out what error case should go where.
+    /**
+     * When we get this callback during the opening of a channel we have usually already set the
+     * explicit error on the channelOpenFuture (so it will be "done").
+     */
     @Override
     public void destroyConnection(PaymentChannelCloseException.CloseReason reason) {
-        log.debug("callback - destroyConnection - start");
-        if(channelOpenFuture.isDone()) {
+        log.debug("callback - destroyConnection - start (channel state = " + stroemIssuerConnection.state().getState() + ")");
+        if (channelOpenFuture.isDone()) {
             if (reason == PaymentChannelCloseException.CloseReason.CLIENT_REQUESTED_CLOSE) {
+                // Normal close due to settle
                 if (stroemIssuerConnection.isSetteling()) {
                     log.info("Payment channel settled successfully.");
                     settlementFuture.set(null);
                 } else {
+                    // This is a bug
                     throw new IllegalStateException("Client has not requested settle, but server says we have!");
                 }
             } else {
+                // Unexpected close
+                // TODO: We will get here upon error: See https://github.com/bitcoinj/bitcoinj/issues/1067
                 log.warn("Payment channel terminating with reason {}", reason);
-                if (reason == PaymentChannelCloseException.CloseReason.SERVER_REQUESTED_TOO_MUCH_VALUE) {
-                    settlementFuture.setException(new InsufficientMoneyException(paymentChannelClient.getMissing()));
-                } else {
-                    currentFuture.setException(new PaymentChannelCloseException("Unexpected payment channel termination", reason));
-                }
+                currentFuture.setException(new PaymentChannelCloseException("Unexpected payment channel termination", reason));
             }
         } else {
+            // Safety catch: norwally we will never get here
             channelOpenFuture.setException(new PaymentChannelCloseException("Unable to open payment channel for reason : " + reason, reason));
         }
         wireParser.closeConnection();

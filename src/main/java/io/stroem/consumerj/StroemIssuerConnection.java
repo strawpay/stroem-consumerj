@@ -1,5 +1,6 @@
 package io.stroem.consumerj;
 
+import com.google.common.util.concurrent.Futures;
 import io.stroem.api.Messages;
 import io.stroem.consumerj.issuer.*;
 import io.stroem.promissorynote.PaymentInstrument;
@@ -21,6 +22,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.spongycastle.math.ec.ECPoint;
@@ -50,6 +52,8 @@ public class StroemIssuerConnection {
   private final SettableFuture<StroemIssuerConnectionResult> channelOpenFuture = SettableFuture.create();
   // Holds the status of a settlement of the payment channel
   private SettableFuture<Void> settlementFuture = SettableFuture.create();
+  // When this is not null, we have an ongoing payment increment
+  private SettableFuture<PaymentIncrementAck> incrementPaymentFuture = null;
   // A general future used to detect errors
   private SettableFuture<Void> currentFuture = SettableFuture.create();
 
@@ -245,10 +249,17 @@ public class StroemIssuerConnection {
         } catch (StroemProtocolException e) {
           // (This could happen anytime)
           log.error("A Stroem protocol error occurred: " + e.getCode().name());
-          if(!channelOpenFuture.isDone()) {
+          if(channelOpenFuture.isDone()) {
+            log.debug("Channel has been open");
+            if(incrementPaymentFuture != null && !incrementPaymentFuture.isDone()) {
+              log.debug("This is an incrementPayment error");
+              incrementPaymentFuture.setException(e);
+            }
+          } else {
             channelOpenFuture.set(new StroemIssuerConnectionResult(e));
           }
           currentFuture.setException(e);
+
         }
       }
 
@@ -273,6 +284,11 @@ public class StroemIssuerConnection {
         // Now we will wait for the issuer's response (see StroemMessageReceiver.receiveStroemVersion())
       }
 
+      /**
+       * This will AFAIK be called after destroyConnection() callback.
+       * Here we know that the connection was closed, but not why,
+       * so do not do too much here.
+       */
       @Override
       public void connectionClosed(ProtobufParser<StroemMessage> handler) {
         log.debug("callback - connectionClosed - start");
@@ -315,18 +331,13 @@ public class StroemIssuerConnection {
    *                                    received from the merchant.
    * @param myTransactionKey - A (potentially new) key pair that will be used during this transaction. Must be used to sign the
    *                later.
-   * @return StroemNegotiator - use this object to sign and negotiate the promissory note.
-   * @throws ValueOutOfRangeException If the size is negative or would pay more than this channel's total value
-   * @throws ExecutionException If the ack future is interrupted
-   * @throws InterruptedException If the ack future is interrupted
-   * @throws IllegalStateException If the channel has been closed or is not yet open
-   *                               (see {@link StroemIssuerConnection#getChannelOpenFuture()} for the second)
-
+   * @return StroemIncrementPaymentResult - holds a StroemNegotiator if payment successful.
+   *                                       Use the StroemNegotiator object to sign and negotiate the promissory note.
    */
-  public synchronized StroemNegotiator incrementPayment(
+  public synchronized StroemIncrementPaymentResult incrementPayment(
       byte[] merchantPaymentDetailsBytes,
       ECKey myTransactionKey
-  ) throws ValueOutOfRangeException, ExecutionException,  InterruptedException {
+  ) {
 
     log.debug("1. Begin incrementPayment.");
     verifyStroemStateIsChannelOpen();
@@ -343,21 +354,51 @@ public class StroemIssuerConnection {
     Coin sizeFromMerchant = returnBundle.getAmount();
 
     log.debug("3. About to pay the issuer (do an incrementPayment call).");
-    ListenableFuture<PaymentIncrementAck> ackFuture = paymentChannelClient.incrementPayment(sizeFromMerchant, messageRequestProto.toByteString(), this.userKeySetup);
 
-    PaymentIncrementAck ack = ackFuture.get();
-    log.debug("4. Ack received. ");
+    ListenableFuture<PaymentIncrementAck> ackFuture;
+    try {
+      incrementPaymentFuture = SettableFuture.create(); // TODO: Can't catch its error message yet
+      ackFuture = paymentChannelClient.incrementPayment(sizeFromMerchant, messageRequestProto.toByteString(), this.userKeySetup);
+    } catch (IllegalStateException e) {
+      log.error("IllegalStateException (means connection was closed) ");
+      return new StroemIncrementPaymentResult(StroemIncrementPaymentResult.StatusCode.TCP_SOCKET_CLOSED, e.getMessage());
+    } catch (ValueOutOfRangeException e) {
+      return new StroemIncrementPaymentResult(StroemIncrementPaymentResult.StatusCode.INSUFFICIENT_MONEY, e.getMessage());
+    }
+
+    log.debug("4. Wait for the future");
+    PaymentIncrementAck ack = null;
+    try {
+      ack = ackFuture.get();
+    } catch (InterruptedException e) {
+      log.error("Interrupted: " + e.getMessage());
+      return new StroemIncrementPaymentResult(StroemIncrementPaymentResult.StatusCode.INTERRUPTED, e.getMessage());
+    } catch (ExecutionException e) {
+      log.error("Error from issuer: " + e.getMessage() + ", with cause: " + e.getCause().getMessage());
+      Throwable t = e.getCause();
+      if (t instanceof PaymentChannelCloseException) {
+        // Will be in bitcoinj soon: https://github.com/bitcoinj/bitcoinj/issues/1067
+        PaymentChannelCloseException ce = (PaymentChannelCloseException) t;
+        return new StroemIncrementPaymentResult(ce);
+      } else {
+        log.error("Unusual exception: " + t, t);
+        return new StroemIncrementPaymentResult(StroemIncrementPaymentResult.StatusCode.ERROR, t.getMessage());
+      }
+    }
+
+    log.debug("5. Ack received. ");
     setStroemStep(StroemStep.PAYMENT_DONE);
 
-    log.debug("5. Prepare for negotiation. ");
+    log.debug("6. Prepare for negotiation. ");
     ByteString infoByteString = ack.getInfo();
     PaymentInstrument.PromissoryNote promissoryNote = JavaToScalaBridge.buildPromissoryNoteFromBytes(infoByteString);
     ECPoint merchantPublicKey = returnBundle.getMerchantPublicKey();
     final PaymentInstrument.PaymentInfo paymentInfo = Messages.displayTextToPaymentInfo(returnBundle.getDisplayText());
     PaymentInstrument.NegotiateInfo negotiateInfo = JavaToScalaBridge.validateForNegotiate(promissoryNote, myPublicKey, merchantPublicKey, paymentInfo.bytes());
 
-    log.debug("6. End (return StroemNegotiator).");
-    return new StroemNegotiator(negotiateInfo);
+    log.debug("7. End (return StroemNegotiator).");
+    StroemNegotiator stroemNegotiator = new StroemNegotiator(negotiateInfo);
+    return new StroemIncrementPaymentResult(stroemNegotiator);
   }
 
   /**
@@ -381,20 +422,26 @@ public class StroemIssuerConnection {
     }
   }
 
-  private void verifyStroemStateIsChannelOpen() {
+  private StroemIncrementPaymentResult verifyStroemStateIsChannelOpen() {
     switch (this.stroemStep) {
       case CONNECTION_OPEN:
         log.debug("This is the first payment on this TCP session");
-        break;
+        return null;
       case PAYMENT_DONE:
         log.debug("Last payment is completed, OK to make a new payment.");
-        break;
+        return null;
       case WAITING_FOR_PAYMENT_ACK:
-        throw new IllegalStateException("The last payment has not yet been completed. Cannot start new."); // Should not be possible since synchronized
+        String err1 = "The last payment has not yet been completed. Cannot start new.";
+        log.error(err1); // Should not be possible since synchronized
+        return new StroemIncrementPaymentResult(StroemIncrementPaymentResult.StatusCode.CHANNEL_NOT_READY, err1);
       case CONNECTION_CLOSED:
-        throw new IllegalStateException("Cannot make payment on a closed channel");
+        String err2 = "Cannot make payment on a closed channel";
+        log.error(err2);
+        return new StroemIncrementPaymentResult(StroemIncrementPaymentResult.StatusCode.CHANNEL_CLOSED, err2);
       default:
-        throw new IllegalStateException("Cannot make payments when the connection's state is: " + this.stroemStep);
+        String err3 = "Cannot make payments when the connection's state is: " + this.stroemStep;
+        log.error(err3);
+        return new StroemIncrementPaymentResult(StroemIncrementPaymentResult.StatusCode.CHANNEL_NOT_READY, err3);
     }
   }
 

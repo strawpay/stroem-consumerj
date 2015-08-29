@@ -51,7 +51,7 @@ public class StroemMessageReceiver {
         checkState(msg.hasPromissoryNote());
         receivePromissoryNote(msg.getPromissoryNote());
         return null;
-      case ERROR:
+      case ERROR: // Only for Stroem Errors
         checkState(msg.hasError());
         receiveError(msg.getError());
         return null;
@@ -98,11 +98,11 @@ public class StroemMessageReceiver {
   }
 
   /**
-   *
+   * The Promissory Note was sent in a separate Stroem message
    */
   private void receivePromissoryNote(StroemProtos.PromissoryNote msg) {
     log.debug("Received Stroem promissory note");
-    //  TODO: Not needed yet
+    //  TODO: Not needed yet, since we get the PN inside the ACK as of now
     throw new IllegalStateException("not impl");
 
   }

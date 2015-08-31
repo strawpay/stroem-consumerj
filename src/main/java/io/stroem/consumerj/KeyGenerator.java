@@ -12,14 +12,13 @@ import java.math.BigInteger;
  */
 public class KeyGenerator {
 
-   /**
-    * @return an ECKey with a private part. This can be usseful since a deterministic key does not have private part.
-    */
-   public static ECKey generateKeyWithPrivatePart() {
-
-      DigitalSignatureScheme.KeyPair keyPair = JavaToScalaBridge.generateKeyPair();
-      BigInteger priv = (BigInteger) keyPair.privateKey();
-      ECPoint pub = (ECPoint) keyPair.publicKey();
-      return ECKey.fromPrivateAndPrecalculatedPublic(priv, pub);
-   }
+    /**
+     * @return an ECKey with a private part. This can be usseful since a deterministic key does not have private part.
+     */
+    public static ECKey generateKeyWithPrivatePart() {
+        DigitalSignatureScheme.KeyPair keyPair = JavaToScalaBridge.generateKeyPair();
+        BigInteger priv = (BigInteger) keyPair.privateKey();
+        ECPoint pub = (ECPoint) keyPair.publicKey();
+        return ECKey.fromPrivateAndPrecalculatedPublic(priv, pub);
+    }
 }

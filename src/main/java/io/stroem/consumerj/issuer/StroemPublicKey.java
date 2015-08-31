@@ -7,19 +7,19 @@ import com.google.protobuf.ByteString;
  *  TODO: This will be a class hierarchy
  */
 public class StroemPublicKey {
-  private ByteString key;
-  private String type;
+    private ByteString key;
+    private String type;
 
-  public StroemPublicKey(ByteString key, String type) {
-    this.key = key;
-    this.type = type;
-  }
+    public StroemPublicKey(ByteString key, String type) {
+        this.key = key;
+        this.type = type;
+    }
 
-  public ByteString getKey() {
-    return key;
-  }
+    public ByteString getKey() {
+        return key;
+    }
 
-  public String getType() {
-    return type;
-  }
+    public String getType() {
+        return type;
+    }
 }

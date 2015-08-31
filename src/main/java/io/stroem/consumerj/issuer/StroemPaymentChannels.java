@@ -17,59 +17,59 @@ import java.util.Map;
  */
 public class StroemPaymentChannels {
 
-  // All the channels in the wallet
-  private final Map<String, StroemPaymentChannelComplete> allStroemPaymentChannelMap;
+    // All the channels in the wallet
+    private final Map<String, StroemPaymentChannelComplete> allStroemPaymentChannelMap;
 
-  // Note that this info might get in a few hours, as channels time out
-  private Map<StroemId, StroemPaymentChannelComplete> openStroemPaymentChannelMap;
+    // Note that this info might get in a few hours, as channels time out
+    private Map<StroemId, StroemPaymentChannelComplete> openStroemPaymentChannelMap;
 
-  // This is the channel that the consumer probably would like to use.
-  private StroemPaymentChannelComplete preferredStroemPaymentChannel;
+    // This is the channel that the consumer probably would like to use.
+    private StroemPaymentChannelComplete preferredStroemPaymentChannel;
 
-  public StroemPaymentChannels() {
-    allStroemPaymentChannelMap = new HashMap<String, StroemPaymentChannelComplete>();
-    preferredStroemPaymentChannel = null;
-  }
-
-  public void addStroemPaymentChannel(StroemPaymentChannelComplete stroemPaymentChannel) {
-    allStroemPaymentChannelMap.put(stroemPaymentChannel.getHash(), stroemPaymentChannel);
-  }
-
-  public void setPreferred(StroemPaymentChannelComplete stroemPaymentChannel) {
-    preferredStroemPaymentChannel = stroemPaymentChannel;
-  }
-
-  public StroemPaymentChannels(StroemPaymentChannelProtos stroemPaymentChannelProtos) {
-    Map<String, StroemPaymentChannelComplete> resultMap = new HashMap<String, StroemPaymentChannelComplete>();
-
-
-    PreferredStroemPaymentChannelProto preferredStroemPaymentChannelProto = stroemPaymentChannelProtos.getPreferredChannel();
-    String preferredHash =  null;
-    if (preferredStroemPaymentChannelProto != null) {
-      preferredHash = preferredStroemPaymentChannelProto.getHash();
+    public StroemPaymentChannels() {
+        allStroemPaymentChannelMap = new HashMap<String, StroemPaymentChannelComplete>();
+        preferredStroemPaymentChannel = null;
     }
 
-    for (StroemPaymentChannelProto stroemPaymentChannelProto : stroemPaymentChannelProtos.getStroemPaymentChannelList()) {
-      StroemPaymentChannelComplete stroemPaymentChannel = StroemPaymentChannelComplete.buildFrom(stroemPaymentChannelProto);
-      resultMap.put(stroemPaymentChannelProto.getHash(), stroemPaymentChannel);
-      if (preferredHash != null && preferredHash.equalsIgnoreCase(stroemPaymentChannelProto.getHash())) {
+    public void addStroemPaymentChannel(StroemPaymentChannelComplete stroemPaymentChannel) {
+        allStroemPaymentChannelMap.put(stroemPaymentChannel.getHash(), stroemPaymentChannel);
+    }
+
+    public void setPreferred(StroemPaymentChannelComplete stroemPaymentChannel) {
         preferredStroemPaymentChannel = stroemPaymentChannel;
-      }
     }
 
-    this.allStroemPaymentChannelMap = resultMap;
+    public StroemPaymentChannels(StroemPaymentChannelProtos stroemPaymentChannelProtos) {
+        Map<String, StroemPaymentChannelComplete> resultMap = new HashMap<String, StroemPaymentChannelComplete>();
 
-  }
 
-  public StroemPaymentChannelComplete getPreferredStroemPaymentChannel() {
-    return preferredStroemPaymentChannel;
-  }
+        PreferredStroemPaymentChannelProto preferredStroemPaymentChannelProto = stroemPaymentChannelProtos.getPreferredChannel();
+        String preferredHash =  null;
+        if (preferredStroemPaymentChannelProto != null) {
+            preferredHash = preferredStroemPaymentChannelProto.getHash();
+        }
 
-  public StroemPaymentChannelComplete getStroemPaymentChannel(String hash) {
-    return allStroemPaymentChannelMap.get(hash);
-  }
+        for (StroemPaymentChannelProto stroemPaymentChannelProto : stroemPaymentChannelProtos.getStroemPaymentChannelList()) {
+            StroemPaymentChannelComplete stroemPaymentChannel = StroemPaymentChannelComplete.buildFrom(stroemPaymentChannelProto);
+            resultMap.put(stroemPaymentChannelProto.getHash(), stroemPaymentChannel);
+            if (preferredHash != null && preferredHash.equalsIgnoreCase(stroemPaymentChannelProto.getHash())) {
+                preferredStroemPaymentChannel = stroemPaymentChannel;
+            }
+        }
 
-  public Collection<StroemPaymentChannelComplete> getAllStroemPaymentChannels() {
-    return allStroemPaymentChannelMap.values();
-  }
+        this.allStroemPaymentChannelMap = resultMap;
+
+    }
+
+    public StroemPaymentChannelComplete getPreferredStroemPaymentChannel() {
+        return preferredStroemPaymentChannel;
+    }
+
+    public StroemPaymentChannelComplete getStroemPaymentChannel(String hash) {
+        return allStroemPaymentChannelMap.get(hash);
+    }
+
+    public Collection<StroemPaymentChannelComplete> getAllStroemPaymentChannels() {
+        return allStroemPaymentChannelMap.values();
+    }
 }

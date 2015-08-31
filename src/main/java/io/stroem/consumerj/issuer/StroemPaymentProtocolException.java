@@ -11,11 +11,11 @@ import org.bitcoinj.protocols.payments.PaymentProtocolException;
  * @since 0.0.1
  */
 public class StroemPaymentProtocolException extends PaymentProtocolException {
-  public StroemPaymentProtocolException(String msg) {
-    super(msg);
-  }
+    public StroemPaymentProtocolException(String msg) {
+        super(msg);
+    }
 
-  public StroemPaymentProtocolException(Exception e) {
-    super(e);
-  }
+    public StroemPaymentProtocolException(Exception e) {
+        super(e);
+    }
 }

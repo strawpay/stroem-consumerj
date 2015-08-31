@@ -10,13 +10,13 @@ package io.stroem.consumerj.issuer;
  */
 public class StroemPaymentHash {
 
-  private final long hashValue;
+    private final long hashValue;
 
-  public StroemPaymentHash(long hashValue) {
-    this.hashValue = hashValue;
-  }
+    public StroemPaymentHash(long hashValue) {
+        this.hashValue = hashValue;
+    }
 
-  public long getHashValue() {
-    return hashValue;
-  }
+    public long getHashValue() {
+        return hashValue;
+    }
 }

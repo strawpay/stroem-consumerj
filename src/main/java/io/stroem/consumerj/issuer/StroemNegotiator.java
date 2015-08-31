@@ -19,34 +19,34 @@ import org.bitcoinj.core.Sha256Hash;
  */
 public class StroemNegotiator {
 
-  PaymentInstrument.NegotiateInfo negotiationInfo;
+    PaymentInstrument.NegotiateInfo negotiationInfo;
 
-  /**
-   * Constructor
-   *
-   * @param negotiationInfo A Scala object that this Java class wraps
-   */
-  public StroemNegotiator(PaymentInstrument.NegotiateInfo negotiationInfo) {
-    this.negotiationInfo = negotiationInfo;
-  }
+    /**
+     * Constructor
+     *
+     * @param negotiationInfo A Scala object that this Java class wraps
+     */
+    public StroemNegotiator(PaymentInstrument.NegotiateInfo negotiationInfo) {
+        this.negotiationInfo = negotiationInfo;
+    }
 
-  /**
-   * Use this method to get the hash of the blockNegotiationInfo. This hash must be signed by the wallet
-   *
-   * @return The hash you must sign
-   */
-  public Sha256Hash getHashToSign() {
-    return (Sha256Hash) negotiationInfo.hashToSign();
-  }
+    /**
+     * Use this method to get the hash of the blockNegotiationInfo. This hash must be signed by the wallet
+     *
+     * @return The hash you must sign
+     */
+    public Sha256Hash getHashToSign() {
+        return (Sha256Hash) negotiationInfo.hashToSign();
+    }
 
-  /**
-   * Use this method to generate the message we should send to the merchant
-   *
-   * @param hashSignature The signature of the hash
-   * @return A Stroem Message that should be sent to the merchant
-   */
-  public StroemProtos.StroemMessage negotiate(ECKey.ECDSASignature hashSignature) {
-    PaymentInstrument.PromissoryNote promissoryNote = negotiationInfo.negotiate(hashSignature);
-    return Messages.newPromissoryNoteMessage(promissoryNote);
-  }
+    /**
+     * Use this method to generate the message we should send to the merchant
+     *
+     * @param hashSignature The signature of the hash
+     * @return A Stroem Message that should be sent to the merchant
+     */
+    public StroemProtos.StroemMessage negotiate(ECKey.ECDSASignature hashSignature) {
+        PaymentInstrument.PromissoryNote promissoryNote = negotiationInfo.negotiate(hashSignature);
+        return Messages.newPromissoryNoteMessage(promissoryNote);
+    }
 }

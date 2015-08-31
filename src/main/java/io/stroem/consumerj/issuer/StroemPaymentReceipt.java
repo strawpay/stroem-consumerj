@@ -14,25 +14,25 @@ import java.util.Date;
  */
 public class StroemPaymentReceipt {
 
-  private final StroemPaymentHash stroemPaymentHash;
-  private final Date signedAt;
-  private final ECKey.ECDSASignature signature;
+    private final StroemPaymentHash stroemPaymentHash;
+    private final Date signedAt;
+    private final ECKey.ECDSASignature signature;
 
-  public StroemPaymentReceipt(StroemPaymentHash stroemPaymentHash, Date signedAt, ECKey.ECDSASignature signature) {
-    this.stroemPaymentHash = stroemPaymentHash;
-    this.signedAt = signedAt;
-    this.signature = signature;
-  }
+    public StroemPaymentReceipt(StroemPaymentHash stroemPaymentHash, Date signedAt, ECKey.ECDSASignature signature) {
+        this.stroemPaymentHash = stroemPaymentHash;
+        this.signedAt = signedAt;
+        this.signature = signature;
+    }
 
-  public StroemPaymentHash getStroemPaymentHash() {
-    return stroemPaymentHash;
-  }
+    public StroemPaymentHash getStroemPaymentHash() {
+        return stroemPaymentHash;
+    }
 
-  public Date getSignedAt() {
-    return signedAt;
-  }
+    public Date getSignedAt() {
+        return signedAt;
+    }
 
-  public ECKey.ECDSASignature getSignature() {
-    return signature;
-  }
+    public ECKey.ECDSASignature getSignature() {
+        return signature;
+    }
 }

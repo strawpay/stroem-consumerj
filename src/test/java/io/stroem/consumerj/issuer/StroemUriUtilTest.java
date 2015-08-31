@@ -19,25 +19,25 @@ import static org.junit.Assert.*;
 public class StroemUriUtilTest {
 
 
-  @Test
-  public void testOkUri() throws Exception {
-    String in = "http://strawpay.com/x=1131&y=1235";
-    String out = "strawpay.com";
+    @Test
+    public void testOkUri() throws Exception {
+        String in = "http://strawpay.com/x=1131&y=1235";
+        String out = "strawpay.com";
 
-    URI uri = new URI(in);
-    String ret = StroemUriUtil.getBaseDomainNameFromUri(uri);
+        URI uri = new URI(in);
+        String ret = StroemUriUtil.getBaseDomainNameFromUri(uri);
 
-    assertEquals(ret, out);
-  }
+        assertEquals(ret, out);
+    }
 
-  @Test
-  public void testLongOkUri() throws Exception {
-    String in = "http://xxx.aoeu.strawpay.com/x=1131&y=1235";
-    String out = "strawpay.com";
+    @Test
+    public void testLongOkUri() throws Exception {
+        String in = "http://xxx.aoeu.strawpay.com/x=1131&y=1235";
+        String out = "strawpay.com";
 
-    URI uri = new URI(in);
-    String ret = StroemUriUtil.getBaseDomainNameFromUri(uri);
+        URI uri = new URI(in);
+        String ret = StroemUriUtil.getBaseDomainNameFromUri(uri);
 
-    assertEquals(ret, out);
-  }
+        assertEquals(ret, out);
+    }
 }

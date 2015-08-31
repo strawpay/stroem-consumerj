@@ -10,11 +10,11 @@ package io.stroem.consumerj.issuer;
  */
 public class StroemIdComplex extends StroemId {
 
-  /**
-   * @param serverId - You can use anything as id
-   */
-  public StroemIdComplex(String serverId) {
-    this.serverId = serverId;
-  }
+    /**
+     * @param serverId - You can use anything as id
+     */
+    public StroemIdComplex(String serverId) {
+        this.serverId = serverId;
+    }
 
 }

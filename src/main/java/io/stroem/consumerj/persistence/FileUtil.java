@@ -30,7 +30,7 @@ public class FileUtil {
   public static File createTemporaryDirectory() throws IOException {
 
     // Use JDK7 NIO Files for a more secure operation than Guava
-    File topLevelTemporaryDirectory = Files.createTempDirectory("mbhd").toFile();
+    File topLevelTemporaryDirectory = Files.createTempDirectory("tmp_wallet").toFile();
 
     topLevelTemporaryDirectory.deleteOnExit();
 

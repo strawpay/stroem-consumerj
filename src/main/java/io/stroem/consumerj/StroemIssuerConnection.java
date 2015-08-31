@@ -63,10 +63,7 @@ public class StroemIssuerConnection {
   private boolean settling = false;
 
   // Some intermediate member values (coming from the constructor)
-  private final Wallet wallet;
   private Sha256Hash serverIdHash;
-  private ECKey myKey;
-  private Coin maxValue;
   @Nullable private StroemPaymentChannelConfiguration channelConfiguration;
   @Nullable private KeyParameter userKeySetup;
 
@@ -76,15 +73,24 @@ public class StroemIssuerConnection {
   /**
    *  Tell it to terminate the payment relationship and thus broadcast the micropayment transactions. We will
    *  resume control in destroyConnection below.
+   *
+   * @return future telling the caller when we are done
+   * @throws IllegalStateException - when connection is closed already
    */
-  public synchronized void settlePaymentChannel() {
+  public synchronized ListenableFuture<Void> settlePaymentChannel() throws IllegalStateException {
     settling = true;
-    currentFuture = settlementFuture = SettableFuture.create();
+    currentFuture = settlementFuture;
     if (paymentChannelClient == null) {
       // Have to connect first.
       throw new IllegalStateException("Cannot settle paymnet channel if channel doesn't have a PaymentChannelClient");
     }
-    paymentChannelClient.settle();
+    try {
+      paymentChannelClient.settle();
+      return settlementFuture;
+    } catch (IllegalStateException e) {
+      log.error("Already closed...oh well");
+      throw e;
+    }
   }
 
   /**
@@ -174,10 +180,7 @@ public class StroemIssuerConnection {
   ) {
 
     // Initiate some members
-    this.wallet = wallet;
     this.serverIdHash = serverId.getRealPaymentChannelServerId();
-    this.myKey = myKey;
-    this.maxValue = maxValue;
     this.userKeySetup = userKeySetup;
 
     log.debug("1. Start to init TCP over NIO");
@@ -233,6 +236,7 @@ public class StroemIssuerConnection {
         log.debug("callback - messageReceived - start");
         try {
           StroemStep newStroemStep = stroemMessageReceiver.receiveMessage(msg, stroemStep);
+          log.debug("check for new state");
           if (newStroemStep != null) {
             setStroemStep(newStroemStep);
           }
@@ -254,12 +258,23 @@ public class StroemIssuerConnection {
             if(incrementPaymentFuture != null && !incrementPaymentFuture.isDone()) {
               log.debug("This is an incrementPayment error");
               incrementPaymentFuture.setException(e);
+            } else if (settling) {
+              if (settlementFuture.isDone()) {
+                log.error("How can we get an error after settle han been completed?");
+              } else {
+                log.warn("Something went wrong on the server during settlement: " + e.getMessage());
+                settlementFuture.setException(e);
+              }
+            } else {
+              log.error("Nothing is going on, why did we get an error?");
             }
           } else {
             channelOpenFuture.set(new StroemIssuerConnectionResult(e));
           }
           currentFuture.setException(e);
 
+        } catch (Exception e) {
+          log.error("Some programming error: " + e.getMessage(), e); // Shouldn't happen
         }
       }
 
@@ -354,10 +369,9 @@ public class StroemIssuerConnection {
     Coin sizeFromMerchant = returnBundle.getAmount();
 
     log.debug("3. About to pay the issuer (do an incrementPayment call).");
-
     ListenableFuture<PaymentIncrementAck> ackFuture;
     try {
-      incrementPaymentFuture = SettableFuture.create(); // TODO: Can't catch its error message yet
+      incrementPaymentFuture = SettableFuture.create(); // TODO: Can't catch/use its error message yet
       ackFuture = paymentChannelClient.incrementPayment(sizeFromMerchant, messageRequestProto.toByteString(), this.userKeySetup);
     } catch (IllegalStateException e) {
       log.error("IllegalStateException (means connection was closed) ");
@@ -467,26 +481,6 @@ public class StroemIssuerConnection {
    */
   public PaymentChannelClientState state() {
     return paymentChannelClient.state();
-  }
-
-  /**
-   * Closes the connection, notifying the issuer it should settle the channel by broadcasting the most recent payment
-   * transaction.
-   */
-  public void settle() {
-    // Shutdown is a little complicated.
-    //
-    // This call will cause the CLOSE message to be written to the wire, and then the destroyConnection() method that
-    // we defined above will be called, which in turn will call wireParser.closeConnection(), which in turn will invoke
-    // NioClient.closeConnection(), which will then close the socket triggering interruption of the network
-    // thread it had created. That causes the background thread to die, which on its way out calls
-    // ProtobufParser.connectionClosed which invokes the connectionClosed method we defined above which in turn
-    // then configures the open-future correctly and closes the state object. Phew!
-    try {
-      paymentChannelClient.settle();
-    } catch (IllegalStateException e) {
-      // Already closed...oh well
-    }
   }
 
   private synchronized void setStroemStep(StroemStep ss) {

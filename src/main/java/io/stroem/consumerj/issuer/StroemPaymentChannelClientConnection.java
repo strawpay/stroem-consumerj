@@ -82,13 +82,15 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
         log.debug("callback - destroyConnection - start (channel state = " + stroemIssuerConnection.state().getState() + ")");
         if (channelOpenFuture.isDone()) {
             if (reason == PaymentChannelCloseException.CloseReason.CLIENT_REQUESTED_CLOSE) {
+                log.debug("Client requested close.");
                 // Normal close due to settle
                 if (stroemIssuerConnection.isSetteling()) {
                     log.info("Payment channel settled successfully.");
                     settlementFuture.set(null);
                 } else {
-                    // This is a bug
-                    throw new IllegalStateException("Client has not requested settle, but server says we have!");
+                    String err = "Client has not requested settle, but server says we have!"; // This is a bug
+                    log.error(err);
+                    throw new IllegalStateException(err);
                 }
             } else {
                 // Unexpected close
@@ -97,7 +99,7 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
                 currentFuture.setException(new PaymentChannelCloseException("Unexpected payment channel termination", reason));
             }
         } else {
-            // Safety catch: norwally we will never get here
+            log.error("Safety catch: normally we will never get here");
             channelOpenFuture.setException(new PaymentChannelCloseException("Unable to open payment channel for reason : " + reason, reason));
         }
         wireParser.closeConnection();

@@ -51,14 +51,10 @@ public class StroemIssuerConnection {
     // Holds the status of an initialization of the payment channel
     private final SettableFuture<StroemIssuerConnectionResult> channelOpenFuture = SettableFuture.create();
     // Holds the status of a settlement of the payment channel
-    private SettableFuture<Void> settlementFuture = SettableFuture.create();
+    private SettableFuture<StroemSettleResult> settlementFuture = SettableFuture.create();
     // When this is not null, we have an ongoing payment increment
     private SettableFuture<PaymentIncrementAck> incrementPaymentFuture = null;
-    // A general future used to detect errors
-    private SettableFuture<Void> currentFuture = SettableFuture.create();
 
-    // Indicates if a channel was created (i.e. did not previously exist)
-    private boolean freshChannel = false;
     // True when we have entered the settling process (the settling will terminate the connection)
     private boolean settling = false;
 
@@ -77,19 +73,25 @@ public class StroemIssuerConnection {
      * @return future telling the caller when we are done
      * @throws IllegalStateException - when connection is closed already
      */
-    public synchronized ListenableFuture<Void> settlePaymentChannel() throws IllegalStateException {
-        settling = true;
-        currentFuture = settlementFuture;
+    public synchronized ListenableFuture<StroemSettleResult> settlePaymentChannel() throws IllegalStateException {
         if (paymentChannelClient == null) {
             // Have to connect first.
             throw new IllegalStateException("Cannot settle paymnet channel if channel doesn't have a PaymentChannelClient");
         }
+
+        if (settling || settlementFuture.isDone()) {
+            throw new IllegalStateException("Cannot settle paymnet channel if already settled/settling");
+        }
+
+        settling = true;
         try {
             paymentChannelClient.settle();
-            return settlementFuture;
+            return settlementFuture; // This future will be set in destroyConnection() callback
         } catch (IllegalStateException e) {
-            log.error("Already closed...oh well");
-            throw e;
+            String msg = "Cannot settle since socket is closed: " + e.getMessage();
+            log.error(msg);
+            settlementFuture.set(new StroemSettleResult(StroemSettleResult.StatusCode.TCP_SOCKET_CLOSED, msg));
+            return settlementFuture;
         }
     }
 
@@ -186,8 +188,7 @@ public class StroemIssuerConnection {
         log.debug("1. Start to init TCP over NIO");
 
         // Handles messages going out on the network (Java objects -> Stroem protobuf)
-        StroemPaymentChannelClientConnection stroemPaymentChannelClientConnection = new StroemPaymentChannelClientConnection(this, channelOpenFuture, settlementFuture, currentFuture,
-                paymentChannelTimeoutSeconds);
+        StroemPaymentChannelClientConnection stroemPaymentChannelClientConnection = new StroemPaymentChannelClientConnection(this, channelOpenFuture, settlementFuture, paymentChannelTimeoutSeconds);
 
         PaymentChannelClient.ClientConnection clientConnection = stroemPaymentChannelClientConnection;
         log.debug("2. client connection built");
@@ -234,47 +235,81 @@ public class StroemIssuerConnection {
             @Override
             public void messageReceived(ProtobufParser<StroemMessage> handler, StroemMessage msg) {
                 log.debug("callback - messageReceived - start");
-                try {
-                    StroemStep newStroemStep = stroemMessageReceiver.receiveMessage(msg, stroemStep);
-                    log.debug("check for new state");
-                    if (newStroemStep != null) {
-                        setStroemStep(newStroemStep);
+                StroemReceiveMessageResult result = stroemMessageReceiver.receiveMessage(msg, stroemStep);
+                if (result.isSuccessful()) {
+                    log.debug("We are good, check for new state");
+                    if (result.getNewStroemStep() != null) {
+                        setStroemStep(result.getNewStroemStep());
                     }
-                } catch (WrongStroemServerVersionException e) {
-                    // This happens before the payment channel has begun INITIATE.
-                    String errorMsg = "Incorrect server version: " + e.getMessage();
-                    log.warn(errorMsg);
-                    channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.WRONG_ISSUER_STROEM_VERSION, errorMsg));
-                } catch (InsufficientMoneyException e) {
-                    // We should only get this exception during INITIATE, so channelOpen wasn't called yet.
-                    String errorMsg = "Cannot create a channel since we do not have the money: " + e.getMessage();
-                    log.info(errorMsg);
-                    channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.INSUFFICIENT_MONEY, errorMsg));
-                } catch (StroemProtocolException e) {
-                    // (This could happen anytime)
-                    log.error("A Stroem protocol error occurred: " + e.getCode().name());
-                    if(channelOpenFuture.isDone()) {
-                        log.debug("Channel has been open");
-                        if(incrementPaymentFuture != null && !incrementPaymentFuture.isDone()) {
-                            log.debug("This is an incrementPayment error");
-                            incrementPaymentFuture.setException(e);
-                        } else if (settling) {
-                            if (settlementFuture.isDone()) {
-                                log.error("How can we get an error after settle han been completed?");
-                            } else {
-                                log.warn("Something went wrong on the server during settlement: " + e.getMessage());
-                                settlementFuture.setException(e);
-                            }
-                        } else {
-                            log.error("Nothing is going on, why did we get an error?");
-                        }
-                    } else {
-                        channelOpenFuture.set(new StroemIssuerConnectionResult(e));
-                    }
-                    currentFuture.setException(e);
+                } else {
+                    String errMsg = result.getErrorMessage();
+                    log.warn("Failed with code: " + result.getStatusCode() + ", and message: " + errMsg);
 
-                } catch (Exception e) {
-                    log.error("Some programming error: " + e.getMessage(), e); // Shouldn't happen
+                    switch (result.getStatusCode()) {
+                        case WRONG_ISSUER_STROEM_VERSION:
+                            // This happens before the payment channel has begun INITIATE.
+                            channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.WRONG_ISSUER_STROEM_VERSION, errMsg));
+                            break;
+                        case INSUFFICIENT_MONEY:
+                            // We should only get this error during INITIATE, so channelOpen wasn't called yet.
+                            String errorMsg = "Cannot create a channel since we do not have the money: " + errMsg;
+                            channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.INSUFFICIENT_MONEY, errorMsg));
+                            break;
+                        case ILLEGAL_STATE:
+                            // Only during channel init
+                            channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.ERROR, errMsg));
+                            break;
+                        case UNKNOWN_MESSAGE_TYPE:
+                            // Can happen anytime
+                            handleMultipleFutures(StroemIssuerConnectionResult.StatusCode.BAD_MESSAGE,
+                                    StroemSettleResult.StatusCode.BAD_MESSAGE, errMsg);
+                            break;
+                        case CORRUPT_MESSAGE:
+                            // Can happen anytime
+                            handleMultipleFutures(StroemIssuerConnectionResult.StatusCode.BAD_MESSAGE,
+                                    StroemSettleResult.StatusCode.BAD_MESSAGE, errMsg);
+                            break;
+                        case IE_ERROR:
+                            // Can happen anytime
+                            handleMultipleFutures(StroemIssuerConnectionResult.StatusCode.IE_OTHER,
+                                    StroemSettleResult.StatusCode.IE_OTHER, errMsg);
+                            break;
+                        case ERROR:
+                            // Can happen anytime
+                            handleMultipleFutures(StroemIssuerConnectionResult.StatusCode.ERROR,
+                                    StroemSettleResult.StatusCode.ERROR, errMsg);
+                            break;
+                        default:
+                            log.error("We do not understand this error: "+ result.getStatusCode()); // Programming error
+                            handleMultipleFutures(StroemIssuerConnectionResult.StatusCode.ERROR,
+                                    StroemSettleResult.StatusCode.ERROR,  errMsg);
+                            break;
+                    }
+                }
+            }
+
+            /**
+             * Helper method, here we don't know what future we should update, so we have to figure it out
+             *
+             * @param openStatusCode
+             * @param errMsg
+             */
+            private void handleMultipleFutures(StroemIssuerConnectionResult.StatusCode openStatusCode,
+                                               StroemSettleResult.StatusCode settleStatusCode, String errMsg) {
+                if(!channelOpenFuture.isDone()) {
+                    channelOpenFuture.set(new StroemIssuerConnectionResult(openStatusCode, errMsg));
+                } else if (settling) {
+                    if (settlementFuture.isDone()) {
+                        log.error("How can we get an error after settle has been completed?");
+                    } else {
+                        log.warn("Something went wrong on the server during settlement: " + errMsg);
+                        settlementFuture.set(new StroemSettleResult(settleStatusCode, errMsg));
+                    }
+                } else if (StroemStep.WAITING_FOR_PAYMENT_ACK  == stroemStep){
+                    log.debug("As of now we don't have a way to report this error back to the consumer");
+                    log.error("Cannot pay: " + errMsg);
+                } else {
+                    log.error("Nothing is going on, why did we get an error?");
                 }
             }
 
@@ -461,14 +496,13 @@ public class StroemIssuerConnection {
 
     // Called from StroemPaymentChannelClientConnection
     public void setConnectionOpen(boolean freshChannel) {
-        this.freshChannel = freshChannel;
         setStroemStep(StroemStep.CONNECTION_OPEN);
         StroemIssuerConnectionResult result = new StroemIssuerConnectionResult(StroemIssuerConnection.this);
         channelOpenFuture.set(result);
     }
 
     // Called from StroemPaymentChannelClientConnection
-    public boolean isSetteling() {
+    public boolean isSettling() {
         return settling;
     }
 

@@ -18,6 +18,7 @@ public class StroemIssuerConnectionResult {
         WRONG_ISSUER_STROEM_VERSION(4), // We do not accept the server's Stroem version
         INSUFFICIENT_MONEY(5),          // Not enough money in the wallet to create the channel
         TCP_SOCKET_CLOSED(6),           // The TCP socket was closed (for some unknown reason)
+        BAD_MESSAGE(7),                 // Issuer sent a message we cannot understand
 
         // Issuer Errors: Issuer responds with error code
         IE_TIMEOUT(11),                 // Protocol timeout occurred (one party hung).

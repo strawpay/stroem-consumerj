@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import io.stroem.consumerj.StroemIssuerConnection;
 import io.stroem.proto.StroemProtos;
 import org.bitcoin.paymentchannel.Protos;
-import org.bitcoinj.core.InsufficientMoneyException;
 import org.bitcoinj.net.ProtobufParser;
 import org.bitcoinj.protocols.channels.PaymentChannelClient;
 import org.bitcoinj.protocols.channels.PaymentChannelCloseException;
@@ -33,20 +32,17 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
 
     // Futures
     private final SettableFuture<StroemIssuerConnectionResult> channelOpenFuture;
-    private final SettableFuture<Void> settlementFuture;
-    private final SettableFuture<Void> currentFuture;
+    private final SettableFuture<StroemSettleResult> settlementFuture;
 
 
     public StroemPaymentChannelClientConnection(StroemIssuerConnection stroemIssuerConnection,
                                                 SettableFuture<StroemIssuerConnectionResult> channelOpenFuture,
-                                                SettableFuture<Void> settlementFuture,
-                                                SettableFuture<Void> currentFuture,
+                                                SettableFuture<StroemSettleResult> settlementFuture,
                                                 long paymentChannelTimeoutSeconds
     ) {
         this.stroemIssuerConnection = stroemIssuerConnection;
         this.channelOpenFuture = channelOpenFuture;
         this.settlementFuture = settlementFuture;
-        this.currentFuture = currentFuture;
         this.paymentChannelTimeoutSeconds = paymentChannelTimeoutSeconds;
     }
 
@@ -73,34 +69,45 @@ public class StroemPaymentChannelClientConnection implements PaymentChannelClien
         log.debug("Written to protobuf parser.");
     }
 
-    /**
-     * When we get this callback during the opening of a channel we have usually already set the
-     * explicit error on the channelOpenFuture (so it will be "done").
-     */
+    // When a connection is destroyed, we must close some futures.
     @Override
     public void destroyConnection(PaymentChannelCloseException.CloseReason reason) {
         log.debug("callback - destroyConnection - start (channel state = " + stroemIssuerConnection.state().getState() + ")");
-        if (channelOpenFuture.isDone()) {
+
+        // When we get this callback during the opening of a channel we have usually already set the
+        // explicit error on the channelOpenFuture (so it will be "done").
+        if (!channelOpenFuture.isDone()) {
+            log.error("Safety catch: normally we will never get here: " + reason.name());
+            channelOpenFuture.set(new StroemIssuerConnectionResult(StroemIssuerConnectionResult.StatusCode.ERROR,
+                    "Unable to open payment channel for reason : " + reason.name()));
+            return;
+        }
+
+        if (stroemIssuerConnection.isSettling()) {
+            log.debug("Client requested close.");
             if (reason == PaymentChannelCloseException.CloseReason.CLIENT_REQUESTED_CLOSE) {
-                log.debug("Client requested close.");
-                // Normal close due to settle
-                if (stroemIssuerConnection.isSetteling()) {
-                    log.info("Payment channel settled successfully.");
-                    settlementFuture.set(null);
-                } else {
-                    String err = "Client has not requested settle, but server says we have!"; // This is a bug
-                    log.error(err);
-                    throw new IllegalStateException(err);
+                log.info("Payment channel settled successfully.");
+                if (!settlementFuture.isDone()) {
+                    settlementFuture.set(new StroemSettleResult(StroemSettleResult.StatusCode.OK, ""));
                 }
             } else {
-                // Unexpected close
-                // TODO: We will get here upon error: See https://github.com/bitcoinj/bitcoinj/issues/1067
-                log.warn("Payment channel terminating with reason {}", reason);
-                currentFuture.setException(new PaymentChannelCloseException("Unexpected payment channel termination", reason));
+                String err = "Something went wrong during settle: " + reason.name();
+                log.error(err);
+                if (!settlementFuture.isDone()) {
+                    settlementFuture.set(new StroemSettleResult(StroemSettleResult.StatusCode.ERROR, err));
+                }
             }
         } else {
-            log.error("Safety catch: normally we will never get here");
-            channelOpenFuture.setException(new PaymentChannelCloseException("Unable to open payment channel for reason : " + reason, reason));
+            log.debug("Client did not require close, reason: " + reason.name());
+            if (reason == PaymentChannelCloseException.CloseReason.CLIENT_REQUESTED_CLOSE) {
+                String err = "Client has not requested settle, but server says we have!"; // This is a bug
+                log.error(err);
+                throw new IllegalStateException(err);
+            } else {
+                // Unexpected close
+                // TODO: We will get here upon error during payment: See https://github.com/bitcoinj/bitcoinj/issues/1067
+                log.error("Payment channel terminating with reason {}", reason);
+            }
         }
         wireParser.closeConnection();
     }

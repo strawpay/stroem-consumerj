@@ -20,9 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 public class StroemMessageReceiver {
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(StroemMessageReceiver.class);
 
-    // Used to keep track of whether or not the "socket" ie connection is open and we can generate messages
-    @VisibleForTesting  boolean connectionOpen = false;
-
     private final PaymentChannelClient paymentChannelClient;
 
     private StroemEntity issuerGivenEntity; // Who the issuer claims to be
@@ -36,44 +33,51 @@ public class StroemMessageReceiver {
         this.paymentChannelClient = paymentChannelClient;
     }
 
-    public StroemStep receiveMessage(StroemProtos.StroemMessage msg, StroemStep previousStep)
-            throws InsufficientMoneyException, WrongStroemServerVersionException, StroemProtocolException {
+    public StroemReceiveMessageResult receiveMessage(StroemProtos.StroemMessage msg, StroemStep previousStep) {
 
         switch (msg.getType()) {
             case PAYMENTCHANNEL_MESSAGE:
                 checkState(msg.hasPaymentChannelMessage());
-                readPaymentChannelMessage(msg.getPaymentChannelMessage());
-                return null;
+                return readPaymentChannelMessage(msg.getPaymentChannelMessage());
             case STROEM_SERVER_VERSION:
                 checkState(msg.hasStroemServerVersion());
                 return receiveStroemVersion(msg.getStroemServerVersion(), previousStep);
             case PROMISSORY_NOTE:
                 checkState(msg.hasPromissoryNote());
-                receivePromissoryNote(msg.getPromissoryNote());
-                return null;
+                return receivePromissoryNote(msg.getPromissoryNote());
             case ERROR: // Only for Stroem Errors
                 checkState(msg.hasError());
-                receiveError(msg.getError());
-                return null;
+                return receiveError(msg.getError());
             default:
-                String errMsg = "Client got unknown Stroem message type " + msg.getType().name();
-                log.error(errMsg);
-                throw new StroemProtocolException(errMsg);
+                String errMsg = "Received unknown Stroem message type " + msg.getType().name();
+                log.debug(errMsg);
+                return new StroemReceiveMessageResult(StroemReceiveMessageResult.StatusCode.UNKNOWN_MESSAGE_TYPE, errMsg);
         }
     }
 
     /**
      * Just extract the payment channel message and send it to PaymentChannelClient.
      */
-    private void readPaymentChannelMessage(StroemProtos.PaymentChannelMessage msg) throws InsufficientMoneyException {
+    private StroemReceiveMessageResult readPaymentChannelMessage(StroemProtos.PaymentChannelMessage msg) {
         ByteString byteString = msg.getPaymentChannelMessage();
         try {
             Protos.TwoWayChannelMessage paymentChannelMsg = Protos.TwoWayChannelMessage.newBuilder().mergeFrom(byteString).build();
-            log.debug("Received a StroemMessage of type PaymentChannel: " + paymentChannelMsg.getType());
+            String text = "Received a StroemMessage of type PaymentChannel: " + paymentChannelMsg.getType();
+            if (Protos.TwoWayChannelMessage.MessageType.ERROR == paymentChannelMsg.getType()) {
+                // Ignore these kind of errors
+                log.debug(text + " (this ERROR will be picked up later in the destroyConnection() callback) ");
+            } else {
+                log.debug(text);
+            }
+
             paymentChannelClient.receiveMessage(paymentChannelMsg);
+            return new StroemReceiveMessageResult(); // Even ERROR counts as success at this level, since Stroem does not "see" it
         } catch (InvalidProtocolBufferException e) {
-            log.error("Unable to read the payment channel protobuf message: "+ e.getMessage());
-            throw new RuntimeException(e);
+            return new StroemReceiveMessageResult(StroemReceiveMessageResult.StatusCode.CORRUPT_MESSAGE,
+                    "Unable to read the payment channel protobuf message: ");
+        } catch (InsufficientMoneyException e) {
+            return new StroemReceiveMessageResult(StroemReceiveMessageResult.StatusCode.INSUFFICIENT_MONEY, e.getMessage());
+
         }
     }
 
@@ -81,26 +85,28 @@ public class StroemMessageReceiver {
      * Check that the server version is same as we have.
      * If so, open the payment channel
      */
-    private StroemStep receiveStroemVersion(StroemProtos.StroemServerVersion msg, StroemStep step) throws WrongStroemServerVersionException {
+    private StroemReceiveMessageResult receiveStroemVersion(StroemProtos.StroemServerVersion msg, StroemStep step)  {
         log.debug("Received Stroem server version");
         if(step == StroemStep.WAITING_FOR_SERVER_STROM_VERSION) {
             int serverVersion = msg.getVersion();
             if(serverVersion == StroemIssuerConnection.CLIENT_STROEM_VERSION) {
                 paymentChannelClient.connectionOpen();
                 issuerGivenEntity = new StroemEntity(msg.getEntity());
-                return StroemStep.WAITING_FOR_PAYMENT_CHANNEL_INITIATE;
+                return new StroemReceiveMessageResult(StroemStep.WAITING_FOR_PAYMENT_CHANNEL_INITIATE);
             } else {
-                throw new WrongStroemServerVersionException("Server version should be " + StroemIssuerConnection.CLIENT_STROEM_VERSION + " but was " + serverVersion);
+                return new StroemReceiveMessageResult(StroemReceiveMessageResult.StatusCode.WRONG_ISSUER_STROEM_VERSION,
+                        "Server version should be " + StroemIssuerConnection.CLIENT_STROEM_VERSION + " but was " + serverVersion);
             }
         } else {
-            throw new IllegalStateException("Can't get STROM_VERSION from server before client sent STROM_VERSION");
+            return new StroemReceiveMessageResult(StroemReceiveMessageResult.StatusCode.ILLEGAL_STATE ,
+                    "Can't get STROM_VERSION from server before client sent STROM_VERSION");
         }
     }
 
     /**
      * The Promissory Note was sent in a separate Stroem message
      */
-    private void receivePromissoryNote(StroemProtos.PromissoryNote msg) {
+    private StroemReceiveMessageResult receivePromissoryNote(StroemProtos.PromissoryNote msg) {
         log.debug("Received Stroem promissory note");
         //  TODO: Not needed yet, since we get the PN inside the ACK as of now
         throw new IllegalStateException("not impl");
@@ -110,11 +116,11 @@ public class StroemMessageReceiver {
     /**
      * Try to recognize the error code.
      */
-    private void receiveError(StroemProtos.Error msg) throws StroemProtocolException {
-        log.error("Server sent ERROR {} with explanation {}", msg.getCode().name(), msg.hasExplanation() ? msg.getExplanation() : "(none)");
-        throw new StroemProtocolException(msg.getCode(), msg.getExplanation());
+    private StroemReceiveMessageResult receiveError(StroemProtos.Error msg) {
+        log.debug("Received a Stroem ERROR: " + msg.getCode().name());
+        String expl = msg.hasExplanation() ? msg.getExplanation() : "(none)";
+        String err = "Server sent ERROR " + msg.getCode().name() + " with explanation " +  expl;
+        return new StroemReceiveMessageResult(StroemReceiveMessageResult.StatusCode.IE_ERROR, err);
     }
-
-
 
 }
